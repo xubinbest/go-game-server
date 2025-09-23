@@ -1,0 +1,81 @@
+# Nacos 集群配置
+nameOverride: ""
+fullnameOverride: ""
+
+# 命名空间配置
+namespace: game-server
+
+# 副本数
+replicaCount: 3
+
+# 镜像配置
+image:
+  repository: nacos/nacos-server
+  tag: v2.2.3
+  pullPolicy: IfNotPresent
+
+# 服务配置
+service:
+  headless:
+    name: nacos-headless
+  client:
+    name: nacos
+    type: ClusterIP
+
+# 资源配置
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+
+# JVM 配置
+jvm:
+  xms: "1g"
+  xmx: "1g"
+  xmn: "512m"
+  ms: "128m"
+  mms: "320m"
+
+# 存储配置
+persistence:
+  storageClassName: "nfs"
+  data:
+    size: 10Gi
+  logs:
+    size: 5Gi
+
+# MySQL 配置
+mysql:
+  host: "mysql-cluster-master.game-server.svc.cluster.local"
+  port: "3306"
+  database: "nacos"
+  user: "root"
+  passwordSecret:
+    name: "game-secrets"
+    key: "mysql-root-password"
+  params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8"
+
+# Nacos 自定义属性
+customProperties:
+  heartBeatTimeout: 15000
+  ipDeleteTimeout: 30000
+  healthCheckInterval: 5000
+  automaticDatumversion: true
+  taskDispatchPeriod: 2000
+  dataWarmup: true
+
+# 探针配置
+probes:
+  liveness:
+    initialDelaySeconds: 120
+    timeoutSeconds: 5
+    periodSeconds: 15
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 60
+    timeoutSeconds: 5
+    periodSeconds: 15
+    failureThreshold: 3

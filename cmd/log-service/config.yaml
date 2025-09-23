@@ -1,0 +1,27 @@
+grpc:
+  maxRecvMsgSize: 16777216 # 16MB
+  maxSendMsgSize: 16777216 # 16MB
+  maxConcurrentStreams: 100
+  keepAlive: 60s    # 每60秒发送一次keepalive ping
+  timeout: 10s      # 等待keepalive响应超时时间为10秒
+
+redis:
+  cluster:
+    - "192.168.101.80:6379"
+    - "192.168.101.80:6380" 
+    - "192.168.101.80:6381"
+    - "192.168.101.80:6382"
+    - "192.168.101.80:6383"
+    - "192.168.101.80:6384"
+  password: ""
+  poolSize: 10
+  timeout: 5s
+
+kafka_configs:
+  user_behavior:
+    brokers:
+      - "kafka-broker-0.kafka-broker-headless.game-server.svc.cluster.local:9092"
+      - "kafka-broker-1.kafka-broker-headless.game-server.svc.cluster.local:9092"
+      - "kafka-broker-2.kafka-broker-headless.game-server.svc.cluster.local:9092"
+    topic: "UserBehavior"
+    group_id: "log_service"

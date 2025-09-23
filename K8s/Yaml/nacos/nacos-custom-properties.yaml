@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nacos-custom-properties
+  namespace: game-server
+data:
+  custom.properties: |
+    # 增加心跳超时时间
+    nacos.naming.heart.beat.timeout=15000
+    # 增加不健康实例删除时间
+    nacos.naming.ip.delete.timeout=30000
+    # 调整健康检查间隔
+    nacos.naming.health.check.interval=5000
+    # 开启自动摘除非健康实例
+    nacos.naming.automatic.datumversion=true
+    # 集群成员变更通知周期
+    nacos.naming.distro.taskDispatchPeriod=2000
+    # 启用数据预热
+    nacos.naming.data.warmup=true

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: game-monitoring
+description: 游戏服务器监控系统，包含Prometheus和Grafana
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

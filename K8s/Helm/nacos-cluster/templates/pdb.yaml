@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "nacos-cluster.fullname" . }}-pdb
+  namespace: {{ .Values.namespace }}
+spec:
+  minAvailable: {{ div .Values.replicaCount 2 | ceil | int }}
+  selector:
+    matchLabels:
+      app: {{ include "nacos-cluster.name" . }}

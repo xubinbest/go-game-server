@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "mysql-cluster.slave.fullname" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: {{ include "mysql-cluster.slave.fullname" . }}
+  replicas: {{ .Values.slave.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "mysql-cluster.name" . }}
+      role: slave
+  template:
+    metadata:
+      labels:
+        app: {{ include "mysql-cluster.name" . }}
+        role: slave
+    spec:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+      - name: init-mysql
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          # 使用环境变量获取 pod 序号
+          ORDINAL=$(echo $HOSTNAME | awk -F'-' '{print $NF}')
+          echo [mysqld] > /mnt/conf.d/server-id.cnf
+          # 从节点 server-id 从 2 开始
+          echo server-id=$((2 + $ORDINAL)) >> /mnt/conf.d/server-id.cnf
+        env:
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/conf.d
+      containers:
+      - name: mysql
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.rootPassword.secretName }}
+              key: {{ .Values.mysql.rootPassword.secretKey }}
+        - name: MYSQL_DATABASE
+          value: {{ .Values.mysql.database }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.user }}
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.password.secretName }}
+              key: {{ .Values.mysql.password.secretKey }}
+        ports:
+        - name: mysql
+          containerPort: 3306
+        resources:
+          {{- toYaml .Values.slave.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+              - bash
+              - -c
+              - "mysqladmin ping -uroot -p\"$MYSQL_ROOT_PASSWORD\""
+          initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+        readinessProbe:
+          exec:
+            command: 
+              - bash
+              - -c
+              - "mysql -uroot -p\"$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"
+          initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+        - name: config-map
+          mountPath: /etc/mysql/mysql.conf.d/slave.cnf
+          subPath: slave.cnf
+        - name: config-map
+          mountPath: /docker-entrypoint-initdb.d/init-slave.sh
+          subPath: init-slave.sh
+      volumes:
+      - name: conf
+        emptyDir: {}
+      - name: config-map
+        configMap:
+          name: {{ include "mysql-cluster.configmap" . }}
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if ne .Values.slave.persistence.storageClassName "-" }}
+      storageClassName: {{ .Values.slave.persistence.storageClassName }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.slave.persistence.size }}

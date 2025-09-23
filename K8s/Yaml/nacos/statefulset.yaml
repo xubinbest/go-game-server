@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nacos
+  namespace: game-server
+spec:
+  serviceName: nacos-headless
+  replicas: 3  # 集群模式建议至少3个节点
+  selector:
+    matchLabels:
+      app: nacos
+  template:
+    metadata:
+      labels:
+        app: nacos
+    spec:
+      # 添加Pod反亲和性配置，确保Pod分布在不同节点上
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - nacos
+              topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: nacos
+        image: nacos/nacos-server:v2.2.3
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        ports:
+        - containerPort: 8848
+          name: client
+        - containerPort: 9848
+          name: client-rpc
+        - containerPort: 9849
+          name: raft-rpc
+        env:
+        - name: MODE
+          value: "cluster"  # 改为集群模式
+        - name: NACOS_REPLICAS
+          value: "3"  # 节点数量
+        - name: SERVICE_NAME
+          value: "nacos-headless"
+        - name: DOMAIN_NAME
+          value: "cluster.local"
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NACOS_SERVER_PORT
+          value: "8848"
+        - name: NACOS_APPLICATION_PORT
+          value: "8848"
+        - name: SPRING_DATASOURCE_PLATFORM
+          value: "mysql"
+        - name: MYSQL_SERVICE_HOST
+          value: "mysql.game-server.svc.cluster.local"
+        - name: MYSQL_SERVICE_PORT
+          value: "3306"
+        - name: MYSQL_SERVICE_DB_NAME
+          value: "nacos"
+        - name: MYSQL_SERVICE_USER
+          value: "root"
+        - name: MYSQL_SERVICE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: mysql-root-password
+        - name: MYSQL_SERVICE_DB_PARAM
+          value: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8"
+        - name: JVM_XMS
+          value: "1g"
+        - name: JVM_XMX
+          value: "1g"
+        - name: JVM_XMN
+          value: "512m"
+        - name: JVM_MS
+          value: "128m"
+        - name: JVM_MMS
+          value: "320m"
+        - name: NACOS_DEBUG
+          value: "true"
+        - name: TOMCAT_ACCESSLOG_ENABLED
+          value: "false"
+        - name: NACOS_AUTH_ENABLE
+          value: "false"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        # 优化存活探针和就绪探针配置
+        livenessProbe:
+          httpGet:
+            path: /nacos/v1/console/health/liveness
+            port: 8848
+          initialDelaySeconds: 120
+          timeoutSeconds: 5
+          periodSeconds: 15
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /nacos/v1/console/health/readiness
+            port: 8848
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          periodSeconds: 15
+          failureThreshold: 3
+        volumeMounts:
+        - name: nacos-data
+          mountPath: /home/nacos/data
+        - name: nacos-logs
+          mountPath: /home/nacos/logs
+        # 添加集群配置文件挂载
+        - name: cluster-conf
+          mountPath: /home/nacos/conf/cluster.conf
+          subPath: cluster.conf
+        # 添加自定义属性配置挂载
+        - name: custom-properties
+          mountPath: /home/nacos/conf/custom.properties
+          subPath: custom.properties
+      # 添加额外的卷配置
+      volumes:
+      - name: cluster-conf
+        configMap:
+          name: nacos-cluster-conf
+          items:
+          - key: cluster.conf
+            path: cluster.conf
+      - name: custom-properties
+        configMap:
+          name: nacos-custom-properties
+          items:
+          - key: custom.properties
+            path: custom.properties
+  volumeClaimTemplates:
+  - metadata:
+      name: nacos-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "nfs"
+      resources:
+        requests:
+          storage: 10Gi
+  - metadata:
+      name: nacos-logs
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "nfs"
+      resources:
+        requests:
+          storage: 5Gi

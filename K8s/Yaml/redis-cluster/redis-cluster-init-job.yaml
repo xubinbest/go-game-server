@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-cluster-init
+  namespace: game-server
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      containers:
+      - name: redis-cluster-init
+        image: redis:6.2
+        command:
+        - sh
+        - -c
+        - |
+          # 等待所有Redis节点就绪
+          echo "等待Redis节点准备就绪..."
+          sleep 10
+          
+          # 检查是否已经配置了集群
+          CLUSTER_INITIALIZED=$(redis-cli -h redis-cluster-0.redis-cluster-headless.game-server.svc.cluster.local cluster info | grep "cluster_state:ok" | wc -l)
+          
+          # 如果集群已经初始化，则退出
+          if [ "$CLUSTER_INITIALIZED" -eq "1" ]; then
+            echo "Redis集群已经初始化，无需再次初始化"
+            exit 0
+          fi
+          
+          # 检查密码
+          if [ -f /etc/redis-password/redis-password ]; then
+            export REDIS_PASSWORD=$(cat /etc/redis-password/redis-password)
+            AUTH_ARGS="-a $REDIS_PASSWORD"
+          else
+            AUTH_ARGS=""
+          fi
+          
+          # 创建集群
+          echo "开始初始化Redis集群..."
+          redis-cli -a "$REDIS_PASSWORD" --cluster-yes \
+          --cluster create \
+          $(hostname -i):6379 \
+          $(getent hosts redis-cluster-1.redis-cluster-headless.game-server.svc.cluster.local | awk '{ print $1 }'):6379 \
+          $(getent hosts redis-cluster-2.redis-cluster-headless.game-server.svc.cluster.local | awk '{ print $1 }'):6379 \
+          $(getent hosts redis-cluster-3.redis-cluster-headless.game-server.svc.cluster.local | awk '{ print $1 }'):6379 \
+          $(getent hosts redis-cluster-4.redis-cluster-headless.game-server.svc.cluster.local | awk '{ print $1 }'):6379 \
+          $(getent hosts redis-cluster-5.redis-cluster-headless.game-server.svc.cluster.local | awk '{ print $1 }'):6379 \
+          --cluster-replicas 1
+          
+          # 验证集群状态
+          echo "验证集群状态..."
+          redis-cli $AUTH_ARGS -h redis-cluster-0.redis-cluster-headless.game-server.svc.cluster.local cluster info
+        volumeMounts:
+        - name: redis-password
+          mountPath: /etc/redis-password
+          readOnly: true
+      volumes:
+      - name: redis-password
+        secret:
+          secretName: game-secrets
+          optional: true
+          items:
+          - key: redis-password
+            path: redis-password
+      restartPolicy: OnFailure

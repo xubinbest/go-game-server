@@ -1,0 +1,40 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "redis-cluster.fullname" . }}-monitor
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "redis-cluster.labels" . | nindent 4 }}
+    app: {{ include "redis-cluster.fullname" . }}-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "redis-cluster.fullname" . }}-monitor
+  template:
+    metadata:
+      labels:
+        app: {{ include "redis-cluster.fullname" . }}-monitor
+    spec:
+      containers:
+      - name: redis-exporter
+        image: "{{ .Values.monitoring.image.repository }}:{{ .Values.monitoring.image.tag }}"
+        imagePullPolicy: {{ .Values.monitoring.image.pullPolicy }}
+        env:
+        - name: REDIS_ADDR
+          value: "{{ include "redis-cluster.fullname" . }}.{{ .Values.namespace }}.svc.cluster.local:{{ .Values.redis.port }}"
+        {{- if .Values.redis.password.secretName }}
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.redis.password.secretName }}
+              key: {{ .Values.redis.password.secretKey }}
+              optional: true
+        {{- end }}
+        ports:
+        - containerPort: 9121
+          name: metrics
+        resources:
+          {{- toYaml .Values.monitoring.resources | nindent 10 }}
+{{- end }}

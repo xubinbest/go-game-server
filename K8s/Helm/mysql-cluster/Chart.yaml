@@ -1,0 +1,9 @@
+apiVersion: v2
+name: mysql-cluster
+description: MySQL主从复制集群的Helm Chart
+type: application
+version: 0.1.0
+appVersion: "8.0.33"
+maintainers:
+  - name: xubin
+    email: xubinbest@gmail.com

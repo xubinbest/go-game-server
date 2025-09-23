@@ -1,0 +1,47 @@
+syntax = "proto3";
+package leaderboard;
+
+option go_package = "internal/pb";
+
+service LeaderboardService {
+  // 上报分数
+  rpc ReportScore(ReportScoreRequest) returns (ReportScoreResponse);
+  // 查询排行榜
+  rpc GetLeaderboard(GetLeaderboardRequest) returns (GetLeaderboardResponse);
+  // 查询个人排名
+  rpc GetRank(GetRankRequest) returns (GetRankResponse);
+}
+
+message ReportScoreRequest {
+  string leaderboard = 1; // 排行榜类型
+  string user_id = 2;
+  int64 score = 3;
+}
+message ReportScoreResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetLeaderboardRequest {
+  string leaderboard = 1;
+  int32 offset = 2;
+  int32 limit = 3;
+}
+message GetLeaderboardResponse {
+  repeated LeaderboardEntry entries = 1;
+}
+
+message LeaderboardEntry {
+  string user_id = 1;
+  int64 score = 2;
+  int32 rank = 3;
+}
+
+message GetRankRequest {
+  string leaderboard = 1;
+  string user_id = 2;
+}
+message GetRankResponse {
+  int32 rank = 1;
+  int64 score = 2;
+} 

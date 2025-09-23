@@ -1,0 +1,343 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "internal/pb";
+
+service UserService {
+  // 用户注册
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  // 用户登录
+  rpc Login(LoginRequest) returns (LoginResponse);
+  // 获取背包
+  rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse);
+  // 添加物品
+  rpc AddItem(AddItemRequest) returns (AddItemResponse);
+  // 移除物品
+  rpc RemoveItem(RemoveItemRequest) returns (RemoveItemResponse);
+  // 使用物品
+  rpc UseItem(UseItemRequest) returns (UseItemResponse);
+  // 获取装备信息
+  rpc GetEquipments(GetEquipmentsRequest) returns (GetEquipmentsResponse);
+  // 装备物品
+  rpc EquipItem(EquipItemRequest) returns (EquipItemResponse);
+  // 卸下装备
+  rpc UnequipItem(UnequipItemRequest) returns (UnequipItemResponse);
+  // 获取玩家信息
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse);
+  // 获取玩家所有卡牌信息
+  rpc GetUserCards(GetUserCardsRequest) returns (GetUserCardsResponse);
+  // 激活卡牌
+  rpc ActivateCard(ActivateCardRequest) returns (ActivateCardResponse);
+  // 卡牌升级
+  rpc UpgradeCard(UpgradeCardRequest) returns (UpgradeCardResponse);
+  // 卡牌升星
+  rpc UpgradeCardStar(UpgradeCardStarRequest) returns (UpgradeCardStarResponse);
+  // 获取玩家所有宠物信息
+  rpc GetUserPets(GetUserPetsRequest) returns (GetUserPetsResponse);
+  // 添加宠物
+  rpc AddPet(AddPetRequest) returns (AddPetResponse);
+  // 宠物出战/休战
+  rpc SetPetBattleStatus(SetPetBattleStatusRequest) returns (SetPetBattleStatusResponse);
+  // 增加宠物经验
+  rpc AddPetExp(AddPetExpRequest) returns (AddPetExpResponse);
+  // 获取月签到信息
+  rpc GetMonthlySignInfo(GetMonthlySignInfoRequest) returns (GetMonthlySignInfoResponse);
+  // 月签到
+  rpc MonthlySign(MonthlySignRequest) returns (MonthlySignResponse);
+  // 领取月签到累计奖励
+  rpc ClaimMonthlySignReward(ClaimMonthlySignRewardRequest) returns (ClaimMonthlySignRewardResponse);
+}
+
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+  string email = 3;
+}
+
+message RegisterResponse {
+  int64 user_id = 1;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  int64 user_id = 2;
+  int64 expires_at = 3;
+}
+
+message Item {
+  int64 item_id = 1;        // 物品实例ID
+  int64 template_id = 2;     // 物品模板ID
+  string name = 3;           // 物品名称
+  int32 count = 4;           // 数量
+  int32 type = 5;            // 物品类型
+  int32 sub_type = 6;        // 物品子类型
+  int32 color = 7;           // 物品品质
+  int32 stack = 8;           // 堆叠上限
+  bool equipped = 9;         // 是否已装备
+}
+
+message Inventory {
+  repeated Item items = 1;
+  int32 capacity = 2;
+}
+
+message GetInventoryRequest {
+  int64 user_id = 1;
+}
+
+message GetInventoryResponse {
+  Inventory inventory = 1;
+}
+
+message AddItemRequest {
+  int64 user_id = 1;
+  int64 tpl_id = 2;
+  int32 count = 3;
+}
+
+message AddItemResponse {
+  bool success = 1;
+}
+
+message RemoveItemRequest {
+  int64 user_id = 1;
+  int64 item_id = 2;
+  int32 count = 3;
+}
+
+message RemoveItemResponse {
+  bool success = 1;
+}
+
+message UseItemRequest {
+  int64 user_id = 1;
+  int64 item_id = 2;
+  int32 count = 3;
+}
+
+message UseItemResponse {
+  bool success = 1;
+}
+
+// 装备信息
+message Equipment {
+  int64 id = 1;              // 装备实例ID
+  int64 template_id = 2;      // 装备模板ID
+  int32 slot = 3;            // 装备槽位
+  string name = 4;           // 装备名称
+  string properties = 5;     // JSON格式的装备属性
+}
+
+// 获取装备请求
+message GetEquipmentsRequest {
+  int64 user_id = 1;  // 用户ID
+}
+
+// 获取装备响应
+message GetEquipmentsResponse {
+  repeated Equipment equipments = 1;  // 装备列表
+}
+
+// 装备物品请求
+message EquipItemRequest {
+  int64 user_id = 1;  // 用户ID
+  int64 item_id = 2;  // 背包物品ID
+  int32 slot = 3;     // 装备槽位
+}
+
+// 装备物品响应
+message EquipItemResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 卸下装备请求
+message UnequipItemRequest {
+  int64 user_id = 1;  // 用户ID
+  int32 slot = 2;     // 装备槽位
+}
+
+// 卸下装备响应
+message UnequipItemResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 获取玩家信息
+message GetUserInfoRequest {
+  int64 user_id = 1; // 玩家ID
+}
+
+// 获取玩家信息
+message GetUserInfoResponse {
+  int64 user_id = 1; // 玩家ID
+  string name = 2;   // 玩家名称
+  int32 level = 3;   // 等级
+}
+
+// 卡牌信息
+message Card {
+  int64 id = 1;              // 卡牌实例ID
+  int64 template_id = 2;      // 卡牌模板ID
+  string name = 3;           // 卡牌名称
+  int32 level = 4;           // 卡牌等级
+  int32 star = 5;            // 卡牌星级
+  bool activated = 6;        // 是否已激活
+  string properties = 7;     // JSON格式的卡牌属性
+}
+
+// 获取玩家卡牌请求
+message GetUserCardsRequest {
+  int64 user_id = 1;  // 用户ID
+}
+
+// 获取玩家卡牌响应
+message GetUserCardsResponse {
+  repeated Card cards = 1;  // 卡牌列表
+}
+
+// 激活卡牌请求
+message ActivateCardRequest {
+  int64 user_id = 1;      // 用户ID
+  int64 template_id = 2;  // 卡牌模板ID
+}
+
+// 激活卡牌响应
+message ActivateCardResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 卡牌升级请求
+message UpgradeCardRequest {
+  int64 user_id = 1;  // 用户ID
+  int64 card_id = 2;  // 卡牌ID
+}
+
+// 卡牌升级响应
+message UpgradeCardResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 卡牌升星请求
+message UpgradeCardStarRequest {
+  int64 user_id = 1;  // 用户ID
+  int64 card_id = 2;  // 卡牌ID
+}
+
+// 卡牌升星响应
+message UpgradeCardStarResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 宠物信息
+message Pet {
+  int64 id = 1;              // 宠物实例ID
+  int64 template_id = 2;      // 宠物模板ID
+  string name = 3;           // 宠物名称
+  int32 level = 4;           // 宠物等级
+  int32 exp = 5;             // 当前经验
+  bool is_battle = 6;        // 是否出战
+  string properties = 7;     // JSON格式的宠物属性
+}
+
+// 获取玩家宠物请求
+message GetUserPetsRequest {
+  int64 user_id = 1;  // 用户ID
+}
+
+// 获取玩家宠物响应
+message GetUserPetsResponse {
+  repeated Pet pets = 1;  // 宠物列表
+}
+
+// 添加宠物请求
+message AddPetRequest {
+  int64 user_id = 1;      // 用户ID
+  int64 template_id = 2;  // 宠物模板ID
+}
+
+// 添加宠物响应
+message AddPetResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 设置宠物出战状态请求
+message SetPetBattleStatusRequest {
+  int64 user_id = 1;  // 用户ID
+  int64 pet_id = 2;   // 宠物ID
+  bool is_battle = 3; // 是否出战
+}
+
+// 设置宠物出战状态响应
+message SetPetBattleStatusResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 增加宠物经验请求
+message AddPetExpRequest {
+  int64 user_id = 1;  // 用户ID
+  int64 pet_id = 2;   // 宠物ID
+  int32 exp = 3;      // 增加的经验值
+}
+
+// 增加宠物经验响应
+message AddPetExpResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+}
+
+// 月签到信息
+message MonthlySignInfo {
+  int32 year = 1;              // 年份
+  int32 month = 2;             // 月份
+  repeated int32 sign_days = 3; // 已签到的日期列表
+  int32 total_sign_days = 4;   // 累计签到天数
+  bool can_sign_today = 5;     // 今日是否可以签到
+  int32 today = 6;             // 今日日期
+}
+
+// 获取月签到信息请求
+message GetMonthlySignInfoRequest {
+  int64 user_id = 1;  // 用户ID
+}
+
+// 获取月签到信息响应
+message GetMonthlySignInfoResponse {
+  MonthlySignInfo info = 1;  // 月签到信息
+}
+
+// 月签到请求
+message MonthlySignRequest {
+  int64 user_id = 1;  // 用户ID
+}
+
+// 月签到响应
+message MonthlySignResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+  repeated Item rewards = 3; // 签到奖励
+}
+
+// 领取月签到累计奖励请求
+message ClaimMonthlySignRewardRequest {
+  int64 user_id = 1;  // 用户ID
+  int32 days = 2;     // 累计天数
+}
+
+// 领取月签到累计奖励响应
+message ClaimMonthlySignRewardResponse {
+  bool success = 1;    // 是否成功
+  string message = 2;  // 消息
+  repeated Item rewards = 3; // 奖励
+}

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "nacos-cluster.fullname" . }}-custom-properties
+  namespace: {{ .Values.namespace }}
+data:
+  custom.properties: |
+    # 增加心跳超时时间
+    nacos.naming.heart.beat.timeout={{ .Values.customProperties.heartBeatTimeout }}
+    # 增加不健康实例删除时间
+    nacos.naming.ip.delete.timeout={{ .Values.customProperties.ipDeleteTimeout }}
+    # 调整健康检查间隔
+    nacos.naming.health.check.interval={{ .Values.customProperties.healthCheckInterval }}
+    # 开启自动摘除非健康实例
+    nacos.naming.automatic.datumversion={{ .Values.customProperties.automaticDatumversion }}
+    # 集群成员变更通知周期
+    nacos.naming.distro.taskDispatchPeriod={{ .Values.customProperties.taskDispatchPeriod }}
+    # 启用数据预热
+    nacos.naming.data.warmup={{ .Values.customProperties.dataWarmup }}

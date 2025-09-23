@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mysql-cluster.master.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ include "mysql-cluster.name" . }}
+    role: master
+spec:
+  ports:
+  - port: {{ .Values.master.service.port }}
+    targetPort: mysql
+    name: mysql
+  selector:
+    app: {{ include "mysql-cluster.name" . }}
+    role: master
+  type: {{ .Values.master.service.type }}

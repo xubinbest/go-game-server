@@ -1,0 +1,78 @@
+# MySQL集群配置
+nameOverride: "mysql"
+fullnameOverride: "mysql-cluster"
+
+# 命名空间配置
+namespace: game-server
+
+# 镜像配置
+image:
+  repository: mysql
+  tag: 8.0.33
+  pullPolicy: IfNotPresent
+
+# 主节点配置
+master:
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+  persistence:
+    # 使用默认存储类
+    storageClassName: "nfs"
+    size: 20Gi
+  service:
+    type: ClusterIP
+    port: 3306
+  
+# 从节点配置
+slave:
+  replicaCount: 2
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+  persistence:
+    # 使用默认存储类
+    storageClassName: "nfs"
+    size: 20Gi
+  service:
+    type: ClusterIP
+    port: 3306
+
+# MySQL配置
+mysql:
+  rootPassword:
+    secretName: "game-secrets"
+    secretKey: "mysql-root-password"
+  database: "nacos"
+  user: "nacos"
+  password:
+    secretName: "game-secrets"
+    secretKey: "nacos-mysql-password"
+  
+# MySQL参数
+mysqlParams:
+  maxConnections: 1000
+  bufferPoolSize: "512M"
+  logBinExpiryDays: 7
+  
+# 探针配置
+probes:
+  liveness:
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 10
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 3

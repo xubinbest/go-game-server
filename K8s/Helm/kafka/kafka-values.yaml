@@ -1,0 +1,194 @@
+# Kafka KRaft 模式配置 - 使用 NFS StorageClass
+# =============================================
+
+# 基本命名配置
+nameOverride: "kafka"
+fullnameOverride: "kafka"
+
+# 启用 KRaft 模式（无 ZooKeeper）
+kraft:
+  enabled: true
+
+# Controller 配置
+controller:
+  replicaCount: 3
+  # 明确设置Controller资源
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 768Mi
+      cpu: 500m
+  # 设置合理的JVM堆大小
+  heapOpts: "-Xmx512m -Xms512m"
+  persistence:
+    enabled: true
+    storageClass: "nfs"
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+
+# Broker 配置
+broker:
+  replicaCount: 3
+  # 明确设置Broker资源
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 768Mi
+      cpu: 500m
+  # 设置合理的JVM堆大小
+  heapOpts: "-Xmx512m -Xms512m"
+  persistence:
+    enabled: true
+    storageClass: "nfs"
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+  logPersistence:
+    enabled: true
+    storageClass: "nfs"
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+
+# 禁用 ZooKeeper（KRaft 模式不需要）
+zookeeper:
+  enabled: false
+
+# 删除全局资源配置，改为在各组件中明确指定
+# resources:
+#   requests:
+#     memory: 256Mi
+#     cpu: 250m
+#   limits:
+#     memory: 512Mi
+#     cpu: 500m
+
+# 网络配置
+service:
+  type: ClusterIP
+
+# 监听器配置
+listeners:
+  client:
+    name: CLIENT
+    protocol: PLAINTEXT
+    containerPort: 9092
+  controller:
+    name: CONTROLLER
+    protocol: PLAINTEXT
+    containerPort: 9093
+  interbroker:
+    name: INTERNAL
+    protocol: PLAINTEXT
+    containerPort: 9094
+
+# 安全设置
+auth:
+  clientProtocol: plaintext
+  interBrokerProtocol: plaintext
+  sasl:
+    enabled: false
+  tls:
+    enabled: false
+
+# 主题自动创建和默认配置
+extraConfig: |
+  auto.create.topics.enable=true
+  default.replication.factor=3
+  min.insync.replicas=2
+  num.partitions=3
+  log.retention.hours=168
+  log.segment.bytes=1073741824
+  log.retention.check.interval.ms=300000
+  offsets.topic.replication.factor=3
+  transaction.state.log.replication.factor=3
+  transaction.state.log.min.isr=2
+
+# JMX 配置 - 减少资源使用
+metrics:
+  jmx:
+    enabled: true
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+  kafka:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+# 容忍和亲和性
+tolerations: []
+affinity: {}
+
+# 优雅关闭配置
+terminationGracePeriodSeconds: 120
+
+# 存活和就绪探针
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 60  # 增加初始延迟
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 60  # 增加初始延迟
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6  # 增加失败阈值
+  successThreshold: 1
+
+# 启动探针 (Kubernetes 1.18+)
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 60  # 增加初始延迟
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+  successThreshold: 1
+
+# 外部访问配置
+externalAccess:
+  enabled: false
+
+# 持久卷配置
+persistence:
+  enabled: true
+  mountPath: /bitnami/kafka
+  storageClass: "nfs"
+  accessModes:
+    - ReadWriteOnce
+  size: 20Gi
+
+# 日志级别
+logLevel: info
+
+# 配置优先级类
+priorityClassName: ""
+
+# 节点选择器
+nodeSelector: {}
+
+# Pod 安全上下文
+podSecurityContext:
+  enabled: true
+  fsGroup: 1001
+
+# 容器安全上下文
+containerSecurityContext:
+  enabled: true
+  runAsUser: 1001
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+

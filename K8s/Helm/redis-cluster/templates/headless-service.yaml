@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "redis-cluster.fullname" . }}-headless
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "redis-cluster.labels" . | nindent 4 }}
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+  - name: client
+    port: {{ .Values.redis.port }}
+    targetPort: {{ .Values.redis.port }}
+  - name: gossip
+    port: {{ .Values.redis.gossipPort }}
+    targetPort: {{ .Values.redis.gossipPort }}
+  selector:
+    {{- include "redis-cluster.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: social-service
+  namespace: game-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: social-service
+  template:
+    metadata:
+      labels:
+        app: social-service
+    spec:
+      containers:
+      - name: social-service
+        image: 192.168.101.2:5000/social:v1.0.0
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SERVICE_NAME
+          value: "social-service"
+        - name: GRPC_PORT
+          value: "50051"
+        - name: CONFIG_LOCATION
+          value: "nacos"
+        - name: REGISTRY_TYPE
+          value: "nacos"
+        - name: NACOS_SERVER
+          value: "nacos.game-server.svc.cluster.local"
+        - name: "NACOS_PORT"
+          value: "8848"
+        - name: NACOS_NAMESPACE
+          value: "dcb54ac9-b24b-4851-95a1-06f18f6a9b57"
+        - name: NACOS_GROUP
+          value: "DEFAULT_GROUP"
+        - name: NACOS_TIMEOUT
+          value: "5000"
+        - name: APP_ENV
+          value: "production"
+        livenessProbe:
+          tcpSocket:
+            port: grpc
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: grpc
+          initialDelaySeconds: 15
+          periodSeconds: 5

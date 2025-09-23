@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package game;
+option go_package = "internal/pb";
+
+service GameService {
+  // 玩家加入游戏
+  rpc JoinGame (JoinGameRequest) returns (JoinGameResponse);
+  // 玩家离开游戏
+  rpc LeaveGame (LeaveGameRequest) returns (LeaveGameResponse);
+  // 获取游戏状态
+  rpc GetGameState (GameStateRequest) returns (GameStateResponse);
+  // 玩家操作
+  rpc PlayerAction (PlayerActionRequest) returns (PlayerActionResponse);
+}
+
+message JoinGameRequest {
+  string player_id = 1;
+  string game_id = 2;
+}
+
+message JoinGameResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message LeaveGameRequest {
+  string player_id = 1;
+  string game_id = 2;
+}
+
+message LeaveGameResponse {
+  bool success = 1;
+}
+
+message GameStateRequest {
+  string game_id = 1;
+}
+
+message GameStateResponse {
+  string state = 1;
+  repeated string players = 2;
+}
+
+message PlayerActionRequest {
+  string player_id = 1;
+  string game_id = 2;
+  string action = 3;
+  bytes payload = 4;
+}
+
+message PlayerActionResponse {
+  bool success = 1;
+  string message = 2;
+}

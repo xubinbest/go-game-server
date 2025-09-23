@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ws;
+
+option go_package = "internal/pb";
+
+// WebSocket 消息结构
+message WSMessage {
+  string service = 1;  // 服务名称
+  string method = 2;   // 方法名称
+  bytes payload = 3;   // Protocol Buffers 序列化后的数据
+} 

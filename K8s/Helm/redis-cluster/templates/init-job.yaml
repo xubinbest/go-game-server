@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "redis-cluster.fullname" . }}-init
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "redis-cluster.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      containers:
+      - name: redis-cluster-init
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command:
+        - sh
+        - -c
+        - |
+          # 等待所有Redis节点就绪
+          echo "等待Redis节点准备就绪..."
+          sleep 10
+          
+          # 检查是否已经配置了集群
+          CLUSTER_INITIALIZED=$(redis-cli -h {{ include "redis-cluster.fullname" . }}-0.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local cluster info | grep "cluster_state:ok" | wc -l)
+          
+          # 如果集群已经初始化，则退出
+          if [ "$CLUSTER_INITIALIZED" -eq "1" ]; then
+            echo "Redis集群已经初始化，无需再次初始化"
+            exit 0
+          fi
+          
+          # 检查密码
+          if [ -f /etc/redis-password/redis-password ]; then
+            export REDIS_PASSWORD=$(cat /etc/redis-password/redis-password)
+            AUTH_ARGS="-a $REDIS_PASSWORD"
+          else
+            AUTH_ARGS=""
+          fi
+          
+          # 创建集群
+          echo "开始初始化Redis集群..."
+          redis-cli $AUTH_ARGS --cluster-yes \
+          --cluster create \
+          $(hostname -i):{{ .Values.redis.port }} \
+          $(getent hosts {{ include "redis-cluster.fullname" . }}-1.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local | awk '{ print $1 }'):{{ .Values.redis.port }} \
+          $(getent hosts {{ include "redis-cluster.fullname" . }}-2.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local | awk '{ print $1 }'):{{ .Values.redis.port }} \
+          $(getent hosts {{ include "redis-cluster.fullname" . }}-3.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local | awk '{ print $1 }'):{{ .Values.redis.port }} \
+          $(getent hosts {{ include "redis-cluster.fullname" . }}-4.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local | awk '{ print $1 }'):{{ .Values.redis.port }} \
+          $(getent hosts {{ include "redis-cluster.fullname" . }}-5.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local | awk '{ print $1 }'):{{ .Values.redis.port }} \
+          --cluster-replicas 1
+          
+          # 验证集群状态
+          echo "验证集群状态..."
+          redis-cli $AUTH_ARGS -h {{ include "redis-cluster.fullname" . }}-0.{{ include "redis-cluster.fullname" . }}-headless.{{ .Values.namespace }}.svc.cluster.local cluster info
+        {{- if .Values.redis.password.secretName }}
+        volumeMounts:
+        - name: redis-password
+          mountPath: /etc/redis-password
+          readOnly: true
+        {{- end }}
+      {{- if .Values.redis.password.secretName }}
+      volumes:
+      - name: redis-password
+        secret:
+          secretName: {{ .Values.redis.password.secretName }}
+          optional: true
+          items:
+          - key: {{ .Values.redis.password.secretKey }}
+            path: redis-password
+      {{- end }}
+      restartPolicy: OnFailure

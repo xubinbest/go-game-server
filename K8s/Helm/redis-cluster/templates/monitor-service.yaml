@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "redis-cluster.fullname" . }}-monitor
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "redis-cluster.labels" . | nindent 4 }}
+    app: {{ include "redis-cluster.fullname" . }}-monitor
+spec:
+  ports:
+  - port: 9121
+    targetPort: 9121
+    name: metrics
+  selector:
+    app: {{ include "redis-cluster.fullname" . }}-monitor
+{{- end }}

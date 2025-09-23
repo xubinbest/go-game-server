@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mysql-cluster.configmap" . }}
+  namespace: {{ .Values.namespace }}
+data:
+  master.cnf: |
+    [mysqld]
+    server-id=1
+    log-bin=mysql-bin
+    binlog_format=ROW
+    binlog_expire_logs_seconds={{ mul .Values.mysqlParams.logBinExpiryDays 86400 }}
+    max_connections={{ .Values.mysqlParams.maxConnections }}
+    innodb_buffer_pool_size={{ .Values.mysqlParams.bufferPoolSize }}
+    default_authentication_plugin=mysql_native_password
+    
+  slave.cnf: |
+    [mysqld]
+    server-id=100
+    log-bin=mysql-bin
+    binlog_format=ROW
+    binlog_expire_logs_seconds={{ mul .Values.mysqlParams.logBinExpiryDays 86400 }}
+    max_connections={{ .Values.mysqlParams.maxConnections }}
+    innodb_buffer_pool_size={{ .Values.mysqlParams.bufferPoolSize }}
+    default_authentication_plugin=mysql_native_password
+    read_only=1
+    
+  init-master.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Creating database and user..."
+    mysql -uroot -p${MYSQL_ROOT_PASSWORD} <<EOF
+    CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+    GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+    FLUSH PRIVILEGES;
+    EOF
+    
+    echo "Master initialized successfully."
+    
+  init-slave.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Waiting for MySQL master to be ready..."
+    until mysql -h{{ include "mysql-cluster.master.fullname" . }} -uroot -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1" &> /dev/null
+    do
+      echo "Waiting for MySQL master..."
+      sleep 5
+    done
+    
+    echo "Getting master position..."
+    MASTER_STATUS=$(mysql -h{{ include "mysql-cluster.master.fullname" . }} -uroot -p${MYSQL_ROOT_PASSWORD} -e "SHOW MASTER STATUS\G")
+    MASTER_FILE=$(echo "$MASTER_STATUS" | grep File | awk '{print $2}')
+    MASTER_POS=$(echo "$MASTER_STATUS" | grep Position | awk '{print $2}')
+    
+    if [ -z "$MASTER_FILE" ] || [ -z "$MASTER_POS" ]; then
+      echo "Failed to get master position. Retrying in 5 seconds..."
+      sleep 5
+      exit 1
+    fi
+    
+    echo "Setting up slave replication with log file: $MASTER_FILE, position: $MASTER_POS"
+    mysql -uroot -p${MYSQL_ROOT_PASSWORD} <<EOF
+    STOP SLAVE;
+    CHANGE MASTER TO 
+      MASTER_HOST='{{ include "mysql-cluster.master.fullname" . }}',
+      MASTER_USER='root',
+      MASTER_PASSWORD='${MYSQL_ROOT_PASSWORD}',
+      MASTER_LOG_FILE='$MASTER_FILE',
+      MASTER_LOG_POS=$MASTER_POS;
+    START SLAVE;
+    EOF
+    
+    echo "Slave replication configured."
+    mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "SHOW SLAVE STATUS\G"

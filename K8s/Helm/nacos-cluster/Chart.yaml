@@ -1,0 +1,9 @@
+apiVersion: v2
+name: nacos-cluster
+description: Helm chart for Nacos cluster deployment
+type: application
+version: 0.1.0
+appVersion: "2.2.3"
+maintainers:
+  - name: xubin
+    email: xubinbest@gmail.com

@@ -1,0 +1,73 @@
+# 全局配置
+nameOverride: ""
+fullnameOverride: ""
+namespace: game-server
+
+# Redis配置
+image:
+  repository: redis
+  tag: "6.2"
+  pullPolicy: IfNotPresent
+
+replicaCount: 6  # 3主3从
+
+# 资源配置
+resources:
+  limits:
+    cpu: 1
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# 持久化配置
+persistence:
+  enabled: true
+  storageClass: "nfs"
+  size: 5Gi
+  accessMode: ReadWriteOnce
+
+# Redis配置
+redis:
+  port: 6379
+  gossipPort: 16379
+  password:
+    secretName: game-secrets
+    secretKey: redis-password
+  config:
+    clusterNodeTimeout: 5000
+    appendonly: "yes"
+    appendfilename: "appendonly.aof"
+    appendfsync: "everysec"
+    maxmemory: "800mb"
+    maxmemoryPolicy: "allkeys-lru"
+    timeout: 0
+    tcpKeepalive: 300
+    loglevel: "notice"
+
+# 自动扩缩容配置
+autoscaling:
+  enabled: true
+  minReplicas: 6
+  maxReplicas: 12
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 70
+
+# 监控配置
+monitoring:
+  enabled: true
+  image:
+    repository: oliver006/redis_exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# 网络策略
+networkPolicy:
+  enabled: true

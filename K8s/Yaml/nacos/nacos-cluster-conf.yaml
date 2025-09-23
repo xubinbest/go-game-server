@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nacos-cluster-conf
+  namespace: game-server
+data:
+  cluster.conf: |
+    nacos-0.nacos-headless.game-server.svc.cluster.local:8848
+    nacos-1.nacos-headless.game-server.svc.cluster.local:8848
+    nacos-2.nacos-headless.game-server.svc.cluster.local:8848

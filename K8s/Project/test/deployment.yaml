@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-service
+  namespace: game-server
+  labels:
+    app: test-service 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: test-service
+    spec:
+      containers:
+      - name: test-service
+        image: 192.168.101.2:5000/test:v1.0.0
+        imagePullPolicy: Always
+        ports:
+        - name: grpc
+          containerPort: 50053
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SERVICE_NAME
+          value: "test-service"
+        - name: GRPC_PORT
+          value: "50053"
+        - name: CONFIG_LOCATION
+          value: "nacos"
+        - name: REGISTRY_TYPE
+          value: "nacos"
+        - name: NACOS_SERVER
+          value: "nacos.game-server.svc.cluster.local"
+        - name: NACOS_PORT
+          value: "8848"
+        - name: NACOS_NAMESPACE
+          value: "dcb54ac9-b24b-4851-95a1-06f18f6a9b57"
+        - name: NACOS_GROUP
+          value: "DEFAULT_GROUP"
+        - name: NACOS_TIMEOUT
+          value: "5000"
+        - name: APP_ENV
+          value: "production"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          tcpSocket:
+            port: grpc
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: grpc
+          initialDelaySeconds: 15
+          periodSeconds: 5

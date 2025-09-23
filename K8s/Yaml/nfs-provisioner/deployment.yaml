@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-client-provisioner
+spec:
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+    spec:
+      serviceAccountName: nfs-client-provisioner
+      containers:
+        - name: nfs-subdir-external-provisioner
+          image: k8s.gcr.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: cluster.local/nfs-client
+            - name: NFS_SERVER
+              value: 192.168.101.2  # 使用您的NFS服务器IP
+            - name: NFS_PATH
+              value: /data/nfs      # 使用您的NFS共享路径
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.101.2   # 使用您的NFS服务器IP
+            path: /data/nfs         # 使用您的NFS共享路径
+

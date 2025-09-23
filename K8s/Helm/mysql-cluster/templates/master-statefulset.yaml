@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "mysql-cluster.master.fullname" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: {{ include "mysql-cluster.master.fullname" . }}
+  replicas: {{ .Values.master.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "mysql-cluster.name" . }}
+      role: master
+  template:
+    metadata:
+      labels:
+        app: {{ include "mysql-cluster.name" . }}
+        role: master
+    spec:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+      - name: init-mysql
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          # 直接使用固定的 server-id 为主节点
+          echo [mysqld] > /mnt/conf.d/server-id.cnf
+          echo server-id=1 >> /mnt/conf.d/server-id.cnf
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/conf.d
+      containers:
+      - name: mysql
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.rootPassword.secretName }}
+              key: {{ .Values.mysql.rootPassword.secretKey }}
+        - name: MYSQL_DATABASE
+          value: {{ .Values.mysql.database }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.user }}
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.password.secretName }}
+              key: {{ .Values.mysql.password.secretKey }}
+        ports:
+        - name: mysql
+          containerPort: 3306
+        resources:
+          {{- toYaml .Values.master.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+              - bash
+              - -c
+              - "mysqladmin ping -uroot -p\"$MYSQL_ROOT_PASSWORD\""
+          initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+        readinessProbe:
+          exec:
+            command: 
+              - bash
+              - -c
+              - "mysql -uroot -p\"$MYSQL_ROOT_PASSWORD\" -e 'SELECT 1'"
+          initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+        - name: config-map
+          mountPath: /etc/mysql/mysql.conf.d/master.cnf
+          subPath: master.cnf
+        - name: config-map
+          mountPath: /docker-entrypoint-initdb.d/init-master.sh
+          subPath: init-master.sh
+      volumes:
+      - name: conf
+        emptyDir: {}
+      - name: config-map
+        configMap:
+          name: {{ include "mysql-cluster.configmap" . }}
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if ne .Values.master.persistence.storageClassName "-" }}
+      storageClassName: {{ .Values.master.persistence.storageClassName }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.master.persistence.size }}

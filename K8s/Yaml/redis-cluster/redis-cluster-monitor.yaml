@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cluster-monitor
+  namespace: game-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cluster-monitor
+  template:
+    metadata:
+      labels:
+        app: redis-cluster-monitor
+    spec:
+      containers:
+      - name: redis-exporter
+        image: oliver006/redis_exporter:latest
+        env:
+        - name: REDIS_ADDR
+          value: "redis-cluster.game-server.svc.cluster.local:6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: game-secrets
+              key: redis-password
+              optional: true
+        ports:
+        - containerPort: 9121
+          name: metrics
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-monitor
+  namespace: game-server
+  labels:
+    app: redis-cluster-monitor
+spec:
+  ports:
+  - port: 9121
+    targetPort: 9121
+    name: metrics
+  selector:
+    app: redis-cluster-monitor

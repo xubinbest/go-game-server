@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: game-server
+spec:
+  serviceName: redis-cluster-headless
+  replicas: 6  # 3主3从，共6个节点
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+    spec:
+      containers:
+      - name: redis
+        image: redis:6.2
+        command:
+          - "bash"
+          - "-c"
+          - |
+            set -ex
+            
+            # 生成redis配置
+            cat > /etc/redis/redis.conf <<EOF
+            # 基本配置
+            port 6379
+            cluster-enabled yes
+            cluster-config-file /data/nodes.conf
+            cluster-node-timeout 5000
+            
+            # 持久化配置
+            appendonly yes
+            appendfilename "appendonly.aof"
+            appendfsync everysec
+            
+            # 内存管理
+            maxmemory 800mb
+            maxmemory-policy allkeys-lru
+            
+            # 连接配置
+            timeout 0
+            tcp-keepalive 300
+            
+            # 日志配置
+            loglevel notice
+            logfile /data/redis.log
+            
+            # 安全配置
+            protected-mode no
+            EOF
+            
+            # 如果存在密码，则添加密码配置
+            if [ -f /etc/redis-password/redis-password ]; then
+              export REDIS_PASSWORD=$(cat /etc/redis-password/redis-password)
+              echo "masterauth $REDIS_PASSWORD" >> /etc/redis/redis.conf
+              echo "requirepass $REDIS_PASSWORD" >> /etc/redis/redis.conf
+            fi
+            
+            # 启动redis服务
+            exec redis-server /etc/redis/redis.conf
+        ports:
+        - name: client
+          containerPort: 6379
+        - name: gossip
+          containerPort: 16379  # 集群总线端口
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis
+        - name: redis-password
+          mountPath: /etc/redis-password
+          readOnly: true
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli ping
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: redis-config
+        emptyDir: {}
+      - name: redis-password
+        secret:
+          secretName: game-secrets
+          optional: true
+          items:
+          - key: redis-password
+            path: redis-password
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: nfs
+      resources:
+        requests:
+          storage: 5Gi

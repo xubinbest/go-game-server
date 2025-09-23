@@ -1,0 +1,336 @@
+syntax = "proto3";
+
+package social;
+
+option go_package = "internal/pb";
+
+service SocialService {
+  // 获取好友列表
+  rpc GetFriendList(GetFriendListRequest) returns (GetFriendListResponse);
+  // 发送好友请求
+  rpc SendFriendRequest(SendFriendRequestRequest) returns (SendFriendRequestResponse);
+  // 获取好友请求列表
+  rpc GetFriendRequestList(GetFriendRequestListRequest) returns (GetFriendRequestListResponse);
+  // 处理好友请求
+  rpc HandleFriendRequest(HandleFriendRequestRequest) returns (HandleFriendRequestResponse);
+  // 批量处理好友请求
+  rpc BatchHandleFriendRequest(BatchHandleFriendRequestRequest) returns (BatchHandleFriendRequestResponse);
+  // 删除好友
+  rpc DeleteFriend(DeleteFriendRequest) returns (DeleteFriendResponse);
+
+  // 帮派相关接口
+  // 创建帮派
+  rpc CreateGuild(CreateGuildRequest) returns (CreateGuildResponse);
+  // 获取帮派信息
+  rpc GetGuildInfo(GetGuildInfoRequest) returns (GetGuildInfoResponse);
+  // 获取帮派成员列表
+  rpc GetGuildMembers(GetGuildMembersRequest) returns (GetGuildMembersResponse);
+  // 申请加入帮派
+  rpc ApplyToGuild(ApplyToGuildRequest) returns (ApplyToGuildResponse);
+  // 邀请加入帮派
+  rpc InviteToGuild(InviteToGuildRequest) returns (InviteToGuildResponse);
+  // 获取帮派申请列表
+  rpc GetGuildApplications(GetGuildApplicationsRequest) returns (GetGuildApplicationsResponse);
+  // 处理帮派申请
+  rpc HandleGuildApplication(HandleGuildApplicationRequest) returns (HandleGuildApplicationResponse);
+  // 踢出帮派成员
+  rpc KickGuildMember(KickGuildMemberRequest) returns (KickGuildMemberResponse);
+  // 修改成员职位
+  rpc ChangeMemberRole(ChangeMemberRoleRequest) returns (ChangeMemberRoleResponse);
+  // 转让帮主
+  rpc TransferGuildMaster(TransferGuildMasterRequest) returns (TransferGuildMasterResponse);
+  // 解散帮派
+  rpc DisbandGuild(DisbandGuildRequest) returns (DisbandGuildResponse);
+  // 离开帮派
+  rpc LeaveGuild(LeaveGuildRequest) returns (LeaveGuildResponse);
+  // 获取帮派列表(分页)
+  rpc GetGuildList(GetGuildListRequest) returns (GetGuildListResponse);
+
+  // 聊天相关接口
+  // 发送世界消息
+  rpc SendChatMessage(SendChatMessageRequest) returns (SendChatMessageResponse);
+  // 获取世界消息历史
+  rpc GetChatMessages(GetChatMessagesRequest) returns (GetChatMessagesResponse);
+}
+
+// 聊天消息
+message ChatMessage {
+  int64 id = 1;
+  int32 channel = 2;
+  int64 sender_id = 3;
+  string sender_name = 4;
+  int64 receiver_id = 5; // 用于私聊
+  string content = 6;
+  int64 timestamp = 7;
+  string extra_data = 8; // 额外数据
+}
+
+// 发送聊天消息请求
+message SendChatMessageRequest {
+  int64 sender_id = 1;
+  string content = 2;
+  int32 channel = 3;
+  int64 target_id = 4; // 用于私聊
+  string extra_data = 5; // 额外数据
+}
+
+// 发送聊天消息响应
+message SendChatMessageResponse {
+  bool success = 1;
+  int64 message_id = 2;
+}
+
+// 获取聊天消息请求
+message GetChatMessagesRequest {
+  int32 channel = 1;
+  int64 target_id = 2; // 用于私聊
+  int32 page = 3; // 第几页
+  int32 page_size = 4; // 消息数量限制
+}
+
+// 获取聊天消息响应
+message GetChatMessagesResponse {
+  repeated ChatMessage messages = 1;
+}
+
+message GetFriendListRequest {
+  int64 user_id = 1;
+}
+
+message GetFriendListResponse {
+  repeated FriendInfo friends = 1;
+}
+
+message SendFriendRequestRequest {
+  int64 from_user_id = 1;
+  int64 to_user_id = 2;
+}
+
+message SendFriendRequestResponse {
+  bool success = 1;
+}
+
+message GetFriendRequestListRequest {
+  int64 user_id = 1;
+}
+
+message GetFriendRequestListResponse {
+  repeated FriendRequestInfo requests = 1;
+}
+
+message HandleFriendRequestRequest {
+  int64 request_id = 1;
+  enum Action {
+    ACCEPT = 0;
+    REJECT = 1;
+  }
+  Action action = 2;
+}
+
+message HandleFriendRequestResponse {
+  bool success = 1;
+}
+
+message BatchHandleFriendRequestRequest {
+  repeated int64 request_ids = 1;
+  enum Action {
+    ACCEPT_ALL = 0;
+    REJECT_ALL = 1;
+  }
+  Action action = 2;
+}
+
+message BatchHandleFriendRequestResponse {
+  bool success = 1;
+}
+
+message DeleteFriendRequest {
+  int64 user_id = 1;  // 发起删除的用户ID
+  int64 friend_id = 2; // 被删除的好友ID
+}
+
+message DeleteFriendResponse {
+  bool success = 1;
+}
+
+// 帮派相关消息定义
+message CreateGuildRequest {
+  int64 creator_id = 1;
+  string name = 2;
+  string description = 3;
+  string announcement = 4;
+}
+
+message CreateGuildResponse {
+  bool success = 1;
+  int64 guild_id = 2;
+}
+
+message GetGuildInfoRequest {
+  int64 guild_id = 1;
+}
+
+message GetGuildInfoResponse {
+  GuildInfo guild = 1;
+}
+
+message GetGuildMembersRequest {
+  int64 guild_id = 1;
+}
+
+message GetGuildMembersResponse {
+  repeated GuildMember members = 1;
+}
+
+message ApplyToGuildRequest {
+  int64 user_id = 1;
+  int64 guild_id = 2;
+}
+
+message ApplyToGuildResponse {
+  bool success = 1;
+}
+
+message InviteToGuildRequest {
+  int64 inviter_id = 1;
+  int64 invitee_id = 2;
+  int64 guild_id = 3;
+}
+
+message InviteToGuildResponse {
+  bool success = 1;
+}
+
+message GetGuildApplicationsRequest {
+  int64 guild_id = 1;
+}
+
+message GetGuildApplicationsResponse {
+  repeated GuildApplication applications = 1;
+}
+
+message HandleGuildApplicationRequest {
+  int64 operator_id = 1; // 操作者ID
+  int64 application_id = 2;
+  enum Action {
+    ACCEPT = 0;
+    REJECT = 1;
+  }
+  Action action = 3;
+}
+
+message HandleGuildApplicationResponse {
+  bool success = 1;
+}
+
+message KickGuildMemberRequest {
+  int64 operator_id = 1; // 操作者ID
+  int64 member_id = 2;   // 被踢成员ID
+  int64 guild_id = 3;
+}
+
+message KickGuildMemberResponse {
+  bool success = 1;
+}
+
+message ChangeMemberRoleRequest {
+  int64 operator_id = 1; // 操作者ID
+  int64 member_id = 2;   // 被修改成员ID
+  int64 guild_id = 3;
+  GuildRole new_role = 4;
+}
+
+message ChangeMemberRoleResponse {
+  bool success = 1;
+}
+
+message TransferGuildMasterRequest {
+  int64 role_id = 1;
+  int64 new_master_id = 2;
+}
+
+message TransferGuildMasterResponse {
+  bool success = 1;
+}
+
+message DisbandGuildRequest {
+  int64 role_id = 1;
+}
+
+message DisbandGuildResponse {
+  bool success = 1;
+}
+
+message LeaveGuildRequest {
+  int64 role_id = 1;
+}
+
+message LeaveGuildResponse {
+  bool success = 1;
+}
+
+// 获取帮派列表请求
+message GetGuildListRequest {
+  int32 page = 1;      // 页码，从1开始
+  int32 page_size = 2; // 每页数量
+}
+
+// 获取帮派列表响应
+message GetGuildListResponse {
+  repeated GuildInfo guilds = 1; // 帮派列表
+  int32 total = 2;              // 总数
+  int32 page = 3;               // 当前页码
+  int32 page_size = 4;          // 每页数量
+}
+
+// 帮派信息
+message GuildInfo {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  string announcement = 4;
+  int64 created_at = 5;
+  int64 master_id = 6;
+  int32 member_count = 7;
+  int32 max_members = 8;
+}
+
+// 帮派成员
+message GuildMember {
+  int64 user_id = 1;
+  string username = 2;
+  GuildRole role = 3;
+  int64 join_time = 4;
+  int64 last_active_time = 5;
+}
+
+// 帮派申请
+message GuildApplication {
+  int64 id = 1;
+  int64 user_id = 2;
+  string username = 3;
+  int64 guild_id = 4;
+  int64 apply_time = 5;
+}
+
+// 帮派职位
+enum GuildRole {
+  MASTER = 0;    // 帮主
+  VICE_MASTER = 1; // 副帮主
+  ELDER = 2;     // 长老
+  ELITE = 3;     // 精英
+  MEMBER = 4;    // 成员
+  APPRENTICE = 5; // 学徒
+}
+
+message FriendInfo {
+  int64 user_id = 1;
+  string username = 2;
+}
+
+message FriendRequestInfo {
+  int64 request_id = 1;
+  int64 from_user_id = 2;
+  int64 to_user_id = 3;
+  int64 created_at = 4;
+}

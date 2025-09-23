@@ -1,0 +1,82 @@
+# 全局设置
+global:
+  namespace: game-server
+  storage:
+    storageClass: "nfs"
+
+# Prometheus配置
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: v2.40.0
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+  persistence:
+    enabled: true
+    size: 10Gi
+  service:
+    type: ClusterIP
+    port: 9090
+  retention:
+    time: 15d
+  config:
+    # 这里可以添加prometheus.yml的内容
+
+# Grafana配置
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: 9.3.2
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+  persistence:
+    enabled: true
+    size: 5Gi
+  service:
+    type: ClusterIP
+    port: 3000
+  admin:
+    user: admin
+    # 密码将存储在Secret中
+    existingSecret: game-secrets
+    passwordKey: grafana-password
+    
+  # Grafana Ingress配置
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      # 如果您需要启用TLS/SSL
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: grafana.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.example.com
+          
+  # Grafana环境变量配置
+  env:
+    # 如果您想在子路径下提供Grafana，取消下面两行的注释并修改URL
+    # GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
+    # GF_SERVER_SERVE_FROM_SUB_PATH: "true"

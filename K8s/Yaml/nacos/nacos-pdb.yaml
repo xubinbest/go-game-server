@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nacos-pdb
+  namespace: game-server
+spec:
+  minAvailable: 2  # 确保至少有2个Pod可用
+  selector:
+    matchLabels:
+      app: nacos

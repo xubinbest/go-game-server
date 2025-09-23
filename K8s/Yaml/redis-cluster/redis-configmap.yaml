@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-config
+  namespace: game-server
+data:
+  redis.conf: |
+    port 6379
+    cluster-enabled yes
+    cluster-config-file /data/nodes.conf
+    cluster-node-timeout 5000
+    appendonly yes
+    appendfilename "appendonly.aof"
+    appendfsync everysec
+    maxmemory 800mb
+    maxmemory-policy allkeys-lru
+    timeout 0
+    tcp-keepalive 300
+    loglevel notice
+    logfile /data/redis.log
+    protected-mode no

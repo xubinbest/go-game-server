@@ -1,0 +1,36 @@
+redis:
+  cluster:
+    - 192.168.101.80:6379
+    - 192.168.101.80:6380
+    - 192.168.101.80:6381
+    - 192.168.101.80:6382
+    - 192.168.101.80:6383
+    - 192.168.101.80:6384
+  password: ""
+  poolSize: 10
+  timeout: 5s
+
+database:
+  mysql:
+    enabled: true
+    dsn: "admin:XU19920615bin.@tcp(192.168.101.80:3306)/game_db?charset=utf8mb4&parseTime=True&loc=Local"
+    maxOpenConns: 20
+    maxIdleConns: 10
+    connMaxLifetime: 1h
+  mongodb:
+    enabled: false
+    uri: "mongodb://localhost:27017"
+    database: "game_db"
+    timeout: 10s
+
+auth:
+  secretKey: "your-secret-key-here"
+  tokenExpireTime: 24h
+  salt: "your-salt-here"
+  whitelistPaths:
+    - "/api/user/login"
+    - "/api/user/register"
+
+rateLimit:
+  requestsPerSecond: 100
+  burst: 50

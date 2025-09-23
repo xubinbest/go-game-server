@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "redis-cluster.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "redis-cluster.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "redis-cluster.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "redis-cluster.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "redis-cluster.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: redis
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+          - "bash"
+          - "-c"
+          - |
+            set -ex
+            
+            # 生成redis配置
+            cat > /etc/redis/redis.conf <<EOF
+            # 基本配置
+            port {{ .Values.redis.port }}
+            cluster-enabled yes
+            cluster-config-file /data/nodes.conf
+            cluster-node-timeout {{ .Values.redis.config.clusterNodeTimeout }}
+            
+            # 持久化配置
+            appendonly {{ .Values.redis.config.appendonly }}
+            appendfilename "{{ .Values.redis.config.appendfilename }}"
+            appendfsync {{ .Values.redis.config.appendfsync }}
+            
+            # 内存管理
+            maxmemory {{ .Values.redis.config.maxmemory }}
+            maxmemory-policy {{ .Values.redis.config.maxmemoryPolicy }}
+            
+            # 连接配置
+            timeout {{ .Values.redis.config.timeout }}
+            tcp-keepalive {{ .Values.redis.config.tcpKeepalive }}
+            
+            # 日志配置
+            loglevel {{ .Values.redis.config.loglevel }}
+            logfile /data/redis.log
+            
+            # 安全配置
+            protected-mode no
+            EOF
+            
+            # 如果存在密码，则添加密码配置
+            if [ -f /etc/redis-password/redis-password ]; then
+              export REDIS_PASSWORD=$(cat /etc/redis-password/redis-password)
+              echo "masterauth $REDIS_PASSWORD" >> /etc/redis/redis.conf
+              echo "requirepass $REDIS_PASSWORD" >> /etc/redis/redis.conf
+            fi
+            
+            # 启动redis服务
+            exec redis-server /etc/redis/redis.conf
+        ports:
+        - name: client
+          containerPort: {{ .Values.redis.port }}
+        - name: gossip
+          containerPort: {{ .Values.redis.gossipPort }}
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis
+        {{- if .Values.redis.password.secretName }}
+        - name: redis-password
+          mountPath: /etc/redis-password
+          readOnly: true
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli ping
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: redis-config
+        emptyDir: {}
+      {{- if .Values.redis.password.secretName }}
+      - name: redis-password
+        secret:
+          secretName: {{ .Values.redis.password.secretName }}
+          optional: true
+          items:
+          - key: {{ .Values.redis.password.secretKey }}
+            path: redis-password
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: [ "{{ .Values.persistence.accessMode }}" ]
+      storageClassName: {{ .Values.persistence.storageClass }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+  {{- end }}
