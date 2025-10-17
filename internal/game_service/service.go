@@ -7,6 +7,7 @@ import (
 	"github.xubinbest.com/go-game-server/internal/cache"
 	"github.xubinbest.com/go-game-server/internal/config"
 	"github.xubinbest.com/go-game-server/internal/mq"
+	"github.xubinbest.com/go-game-server/internal/mq/leaderboard"
 	"github.xubinbest.com/go-game-server/internal/pb"
 	"github.xubinbest.com/go-game-server/internal/utils"
 
@@ -59,10 +60,7 @@ func (s *GameGRPCService) PlayerAction(ctx context.Context, req *pb.PlayerAction
 			utils.Error("Failed to get score producer", zap.Error(err))
 			// 继续处理，不让Kafka错误影响游戏流程
 		} else {
-			scoreData := struct {
-				UserID string  `json:"user_id"`
-				Score  float64 `json:"score"`
-			}{
+			scoreData := leaderboard.GameScoreMessage{
 				UserID: req.PlayerId,
 				Score:  100.0,
 			}

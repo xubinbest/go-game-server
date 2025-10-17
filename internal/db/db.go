@@ -44,6 +44,9 @@ type Database interface {
 
 	// 宠物相关方法
 	interfaces.PetDatabase
+
+	// 用户日志相关方法
+	interfaces.UserLogDatabase
 }
 
 // DatabaseClient 实现 Database 接口，使用组合模式
@@ -65,6 +68,7 @@ type DatabaseClient struct {
 	inventoryDB interfaces.InventoryDatabase
 	cardDB      interfaces.CardDatabase
 	petDB       interfaces.PetDatabase
+	logDB       interfaces.UserLogDatabase
 }
 
 // NewDatabaseClient 创建数据库客户端实例
@@ -112,6 +116,7 @@ func (c *DatabaseClient) initGORM() error {
 	c.inventoryDB = gorm.NewGormInventoryDatabase(gormDB, c.sf)
 	c.cardDB = gorm.NewGormCardDatabase(gormDB, c.sf)
 	c.petDB = gorm.NewGormPetDatabase(gormDB, c.sf)
+	c.logDB = gormClient // GormDatabaseClient 实现了 UserLogDatabase 接口
 
 	return nil
 }
@@ -140,6 +145,7 @@ func (c *DatabaseClient) initMongoDB() error {
 	c.guildDB = mongodb.NewMongoDBGuildDatabase(c.mongoDB, dbName, c.sf)
 	c.inventoryDB = mongodb.NewMongoDBInventoryDatabase(c.mongoDB, dbName, c.sf)
 	c.cardDB = mongodb.NewMongoDBCardDatabase(c.mongoDB, dbName, c.sf)
+	c.logDB = nil // TODO: 实现MongoDB的UserLogDatabase
 
 	return nil
 }
@@ -463,4 +469,66 @@ func (c *DatabaseClient) SaveChatMessage(ctx context.Context, message *pb.ChatMe
 
 func (c *DatabaseClient) GetChatMessages(ctx context.Context, channel int32, target_id int64, page, pageSize int32) ([]*pb.ChatMessage, int32, error) {
 	return c.chatDB.GetChatMessages(ctx, channel, target_id, page, pageSize)
+}
+
+// UserLogDatabase 接口方法实现
+
+func (c *DatabaseClient) CreateUserCreateLog(ctx context.Context, log *models.UserCreateLog) error {
+	return c.logDB.CreateUserCreateLog(ctx, log)
+}
+
+func (c *DatabaseClient) CreateUserLoginLog(ctx context.Context, log *models.UserLoginLog) error {
+	return c.logDB.CreateUserLoginLog(ctx, log)
+}
+
+func (c *DatabaseClient) CreateUserLogoutLog(ctx context.Context, log *models.UserLogoutLog) error {
+	return c.logDB.CreateUserLogoutLog(ctx, log)
+}
+
+func (c *DatabaseClient) CreateUserItemLog(ctx context.Context, log *models.UserItemLog) error {
+	return c.logDB.CreateUserItemLog(ctx, log)
+}
+
+func (c *DatabaseClient) CreateUserMoneyLog(ctx context.Context, log *models.UserMoneyLog) error {
+	return c.logDB.CreateUserMoneyLog(ctx, log)
+}
+
+func (c *DatabaseClient) BatchCreateUserCreateLogs(ctx context.Context, logs []*models.UserCreateLog) error {
+	return c.logDB.BatchCreateUserCreateLogs(ctx, logs)
+}
+
+func (c *DatabaseClient) BatchCreateUserLoginLogs(ctx context.Context, logs []*models.UserLoginLog) error {
+	return c.logDB.BatchCreateUserLoginLogs(ctx, logs)
+}
+
+func (c *DatabaseClient) BatchCreateUserLogoutLogs(ctx context.Context, logs []*models.UserLogoutLog) error {
+	return c.logDB.BatchCreateUserLogoutLogs(ctx, logs)
+}
+
+func (c *DatabaseClient) BatchCreateUserItemLogs(ctx context.Context, logs []*models.UserItemLog) error {
+	return c.logDB.BatchCreateUserItemLogs(ctx, logs)
+}
+
+func (c *DatabaseClient) BatchCreateUserMoneyLogs(ctx context.Context, logs []*models.UserMoneyLog) error {
+	return c.logDB.BatchCreateUserMoneyLogs(ctx, logs)
+}
+
+func (c *DatabaseClient) GetUserCreateLogs(ctx context.Context, userID int64, limit, offset int) ([]*models.UserCreateLog, error) {
+	return c.logDB.GetUserCreateLogs(ctx, userID, limit, offset)
+}
+
+func (c *DatabaseClient) GetUserLoginLogs(ctx context.Context, userID int64, limit, offset int) ([]*models.UserLoginLog, error) {
+	return c.logDB.GetUserLoginLogs(ctx, userID, limit, offset)
+}
+
+func (c *DatabaseClient) GetUserLogoutLogs(ctx context.Context, userID int64, limit, offset int) ([]*models.UserLogoutLog, error) {
+	return c.logDB.GetUserLogoutLogs(ctx, userID, limit, offset)
+}
+
+func (c *DatabaseClient) GetUserItemLogs(ctx context.Context, userID int64, limit, offset int) ([]*models.UserItemLog, error) {
+	return c.logDB.GetUserItemLogs(ctx, userID, limit, offset)
+}
+
+func (c *DatabaseClient) GetUserMoneyLogs(ctx context.Context, userID int64, limit, offset int) ([]*models.UserMoneyLog, error) {
+	return c.logDB.GetUserMoneyLogs(ctx, userID, limit, offset)
 }
