@@ -9,9 +9,6 @@ import (
 
 type Cache interface {
 	Close() error
-	SetToken(ctx context.Context, userID int64, token string, expiration time.Duration) error
-	GetToken(ctx context.Context, userID int64) (string, error)
-	DeleteToken(ctx context.Context, userID int64) error
 
 	// 通用缓存方法
 	SPop(ctx context.Context, key string) *redis.StringCmd

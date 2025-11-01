@@ -2,7 +2,9 @@ package user
 
 import (
 	"context"
+	"time"
 
+	"github.xubinbest.com/go-game-server/internal/auth"
 	"github.xubinbest.com/go-game-server/internal/cache"
 	"github.xubinbest.com/go-game-server/internal/config"
 	"github.xubinbest.com/go-game-server/internal/db"
@@ -13,11 +15,16 @@ import (
 )
 
 type Handler struct {
-	deps          *handler.Dependencies
-	dbClient      db.Database
-	cacheClient   cache.Cache
-	cacheManager  *cache.CacheManager
-	cacheService  *CacheService
+	deps         *handler.Dependencies
+	dbClient     db.Database
+	cacheClient  cache.Cache
+	cacheManager *cache.CacheManager
+	cacheService *CacheService
+	tokenStore   interface {
+		SetToken(context.Context, int64, string, time.Duration) error
+		GetToken(context.Context, int64) (string, error)
+		DeleteToken(context.Context, int64) error
+	}
 	cfg           *config.Config
 	sf            *snowflake.Snowflake
 	configManager *designconfig.DesignConfigManager
@@ -31,6 +38,8 @@ func NewHandler(dbClient db.Database, cacheClient cache.Cache, cacheManager *cac
 	}
 
 	cacheService := NewCacheService(deps.CacheManager)
+	// 创建令牌存储（基于 Redis）
+	tokenStore := auth.NewRedisTokenStore(deps.CacheClient)
 
 	return &Handler{
 		deps:          deps,
@@ -38,6 +47,7 @@ func NewHandler(dbClient db.Database, cacheClient cache.Cache, cacheManager *cac
 		cacheClient:   deps.CacheClient,
 		cacheManager:  deps.CacheManager,
 		cacheService:  cacheService,
+		tokenStore:    tokenStore,
 		cfg:           deps.Cfg,
 		sf:            deps.SF,
 		configManager: deps.ConfigManager,
