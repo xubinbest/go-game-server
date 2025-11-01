@@ -8,8 +8,6 @@ type CacheStrategy struct {
 	KeyPrefix string
 	// 缓存时间
 	TTL time.Duration
-	// 是否缓存空值（防止穿透）
-	CacheEmpty bool
 	// 空值缓存时间
 	EmptyTTL time.Duration
 	// 是否使用分布式锁（防止击穿）
@@ -24,7 +22,6 @@ var Strategies = map[string]CacheStrategy{
 	"user_info": {
 		KeyPrefix:   "user:info:",
 		TTL:         30 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    5 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 10 * time.Second,
@@ -33,48 +30,42 @@ var Strategies = map[string]CacheStrategy{
 	"user_inventory": {
 		KeyPrefix:   "user:inventory:",
 		TTL:         10 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    2 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 5 * time.Second,
 	},
 	// 用户装备 - 中等频率
 	"user_equipment": {
-		KeyPrefix:  "user:equipment:",
-		TTL:        15 * time.Minute,
-		CacheEmpty: true,
-		EmptyTTL:   3 * time.Minute,
-		UseLock:    false,
+		KeyPrefix: "user:equipment:",
+		TTL:       15 * time.Minute,
+		EmptyTTL:  3 * time.Minute,
+		UseLock:   false,
 	},
 	// 用户卡牌 - 较少更新
 	"user_cards": {
-		KeyPrefix:  "user:cards:",
-		TTL:        20 * time.Minute,
-		CacheEmpty: true,
-		EmptyTTL:   5 * time.Minute,
-		UseLock:    false,
+		KeyPrefix: "user:cards:",
+		TTL:       20 * time.Minute,
+		EmptyTTL:  5 * time.Minute,
+		UseLock:   false,
 	},
 	// 好友列表 - 较少更新
 	"user_friends": {
-		KeyPrefix:  "user:friends:",
-		TTL:        30 * time.Minute,
-		CacheEmpty: true,
-		EmptyTTL:   5 * time.Minute,
-		UseLock:    false,
+		KeyPrefix: "user:friends:",
+		TTL:       30 * time.Minute,
+		EmptyTTL:  5 * time.Minute,
+		UseLock:   false,
 	},
 	// 公会信息 - 较少更新
 	"guild_info": {
-		KeyPrefix:  "guild:info:",
-		TTL:        20 * time.Minute,
-		CacheEmpty: true,
-		EmptyTTL:   5 * time.Minute,
-		UseLock:    false,
+		KeyPrefix: "guild:info:",
+		TTL:       20 * time.Minute,
+		EmptyTTL:  5 * time.Minute,
+		UseLock:   false,
 	},
 	// 公会成员 - 中等频率更新
 	"guild_members": {
 		KeyPrefix:   "guild:members:",
 		TTL:         15 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    3 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 5 * time.Second,
@@ -83,7 +74,6 @@ var Strategies = map[string]CacheStrategy{
 	"friend_requests": {
 		KeyPrefix:   "friend:requests:",
 		TTL:         10 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    2 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 3 * time.Second,
@@ -92,24 +82,21 @@ var Strategies = map[string]CacheStrategy{
 	"guild_applications": {
 		KeyPrefix:   "guild:applications:",
 		TTL:         10 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    2 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 3 * time.Second,
 	},
 	// 用户宠物 - 中等频率更新
 	"user_pets": {
-		KeyPrefix:  "pet:list:",
-		TTL:        5 * time.Minute,
-		CacheEmpty: true,
-		EmptyTTL:   1 * time.Minute,
-		UseLock:    false,
+		KeyPrefix: "pet:list:",
+		TTL:       5 * time.Minute,
+		EmptyTTL:  1 * time.Minute,
+		UseLock:   false,
 	},
 	// 聊天消息 - 频繁更新
 	"chat_messages": {
 		KeyPrefix:   "chat:messages:",
 		TTL:         5 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    1 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 3 * time.Second,
@@ -118,7 +105,6 @@ var Strategies = map[string]CacheStrategy{
 	"monthly_sign": {
 		KeyPrefix:   "monthly:sign:",
 		TTL:         1 * time.Hour,
-		CacheEmpty:  true,
 		EmptyTTL:    5 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 5 * time.Second,
@@ -127,7 +113,6 @@ var Strategies = map[string]CacheStrategy{
 	"monthly_sign_reward": {
 		KeyPrefix:   "monthly:reward:",
 		TTL:         30 * time.Minute,
-		CacheEmpty:  true,
 		EmptyTTL:    5 * time.Minute,
 		UseLock:     true,
 		LockTimeout: 5 * time.Second,

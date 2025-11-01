@@ -14,7 +14,7 @@ type RedisCache struct {
 	client     redis.Cmdable
 	mu         sync.Mutex
 	lockTokens map[string]string // 进程内记录：每个锁键对应的持有者token
-	pubsubs    map[string]*redis.PubSub
+	pubsubs    map[string][]*redis.PubSub
 	watchdogs  map[string]watchdogEntry
 }
 
@@ -42,7 +42,7 @@ func NewRedisCache(cfg *config.Config) (Cache, error) {
 	cache := &RedisCache{
 		client:     client,
 		lockTokens: make(map[string]string),
-		pubsubs:    make(map[string]*redis.PubSub),
+		pubsubs:    make(map[string][]*redis.PubSub),
 		watchdogs:  make(map[string]watchdogEntry),
 	}
 

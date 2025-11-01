@@ -7,23 +7,21 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Subscribe 订阅频道
+// Subscribe 订阅频道（每次订阅创建独立的 PubSub，便于广播与独立关闭）
 func (r *RedisCache) Subscribe(ctx context.Context, channel string) (<-chan interface{}, error) {
-	// 复用或创建该频道的 PubSub
-	r.mu.Lock()
-	pubsub, ok := r.pubsubs[channel]
-	if !ok {
-		switch c := r.client.(type) {
-		case *redis.Client:
-			pubsub = c.Subscribe(ctx, channel)
-		case *redis.ClusterClient:
-			pubsub = c.Subscribe(ctx, channel)
-		default:
-			r.mu.Unlock()
-			return nil, fmt.Errorf("unsupported client type for Subscribe")
-		}
-		r.pubsubs[channel] = pubsub
+	var ps *redis.PubSub
+	switch c := r.client.(type) {
+	case *redis.Client:
+		ps = c.Subscribe(ctx, channel)
+	case *redis.ClusterClient:
+		ps = c.Subscribe(ctx, channel)
+	default:
+		return nil, fmt.Errorf("unsupported client type for Subscribe")
 	}
+
+	// 记录该频道的 PubSub 列表
+	r.mu.Lock()
+	r.pubsubs[channel] = append(r.pubsubs[channel], ps)
 	r.mu.Unlock()
 
 	ch := make(chan interface{})
@@ -33,28 +31,36 @@ func (r *RedisCache) Subscribe(ctx context.Context, channel string) (<-chan inte
 			out <- msg.Payload
 		}
 		close(out)
-	}(pubsub, ch)
+	}(ps, ch)
 
 	return ch, nil
 }
 
-// Unsubscribe 取消订阅频道
+// Unsubscribe 取消订阅频道（将关闭该频道下所有订阅者的 PubSub）
 func (r *RedisCache) Unsubscribe(ctx context.Context, channel string) error {
 	r.mu.Lock()
-	ps, ok := r.pubsubs[channel]
+	pss, ok := r.pubsubs[channel]
 	if ok {
 		delete(r.pubsubs, channel)
 	}
 	r.mu.Unlock()
-	if !ok || ps == nil {
+	if !ok || len(pss) == 0 {
 		// 没有找到对应订阅，视为已退订
 		return nil
 	}
-	// 退订该频道并关闭 PubSub（单通道场景可直接关闭）
-	if err := ps.Unsubscribe(ctx, channel); err != nil {
-		return err
+	var firstErr error
+	for _, ps := range pss {
+		if ps == nil {
+			continue
+		}
+		if err := ps.Unsubscribe(ctx, channel); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		if err := ps.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
 	}
-	return ps.Close()
+	return firstErr
 }
 
 // Publish 发布消息到频道

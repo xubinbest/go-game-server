@@ -46,7 +46,8 @@ func (r *RedisCache) TryLock(ctx context.Context, key string, ttl time.Duration)
 	return true, nil
 }
 
-// Lock 获取分布式锁，会重试直到获取成功或超时
+// Lock 获取分布式锁（内置看门狗），会重试直到获取成功或超时
+// 看门狗会在 ttl/3 间隔进行续约，直到调用 Unlock 或 ctx 取消
 func (r *RedisCache) Lock(ctx context.Context, key string, ttl time.Duration, timeout time.Duration) error {
 	if ttl <= 0 {
 		return fmt.Errorf("invalid ttl: %v", ttl)
@@ -54,36 +55,10 @@ func (r *RedisCache) Lock(ctx context.Context, key string, ttl time.Duration, ti
 	if timeout <= 0 {
 		return fmt.Errorf("invalid timeout: %v", timeout)
 	}
-	start := time.Now()
-	backoff := 25 * time.Millisecond
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		ok, err := r.TryLock(ctx, key, ttl)
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
-		}
-		if time.Since(start) > timeout {
-			return fmt.Errorf("acquire lock timeout")
-		}
-		time.Sleep(backoff + randomJitter(20))
-		if backoff < 500*time.Millisecond {
-			backoff *= 2
-		}
+	if err := r.acquireLockWithRetry(ctx, key, ttl, timeout); err != nil {
+		return err
 	}
-}
-
-// LockWithWatchdog 获取分布式锁并启动自动续约，看门狗会在 ttl/3 间隔续约，直到取消
-// 返回的 cancel 可手动停止看门狗；调用 Unlock 也会自动停止
-func (r *RedisCache) LockWithWatchdog(ctx context.Context, key string, ttl time.Duration, timeout time.Duration) (context.CancelFunc, error) {
-	if err := r.Lock(ctx, key, ttl, timeout); err != nil {
-		return nil, err
-	}
-	// 若已有看门狗，先取消（防重入场景调用）
+	// 启动看门狗（若已存在旧的看门狗，先取消）
 	r.mu.Lock()
 	if old, ok := r.watchdogs[key]; ok {
 		delete(r.watchdogs, key)
@@ -129,15 +104,98 @@ func (r *RedisCache) LockWithWatchdog(ctx context.Context, key string, ttl time.
 		}
 	}()
 
-	myId := rid
+	return nil
+}
+
+// StartWatchdog 在已持有锁的前提下启动看门狗（供 TryLock 成功后使用）
+func (r *RedisCache) StartWatchdog(ctx context.Context, key string, ttl time.Duration) (context.CancelFunc, error) {
+	if ttl <= 0 {
+		return nil, fmt.Errorf("invalid ttl: %v", ttl)
+	}
+	// 校验是否当前进程持有该锁
+	r.mu.Lock()
+	if _, ok := r.lockTokens[key]; !ok {
+		r.mu.Unlock()
+		return nil, fmt.Errorf("watchdog start failed: not lock owner for key=%s", key)
+	}
+	// 若已有看门狗，先取消
+	if old, ok := r.watchdogs[key]; ok {
+		delete(r.watchdogs, key)
+		r.mu.Unlock()
+		old.cancel()
+	} else {
+		r.mu.Unlock()
+	}
+
+	cctx, cancel := context.WithCancel(context.Background())
+	rid, err := generateToken()
+	if err != nil {
+		rid = fmt.Sprintf("wd-%d", time.Now().UnixNano())
+	}
+	r.mu.Lock()
+	r.watchdogs[key] = watchdogEntry{id: rid, cancel: cancel}
+	r.mu.Unlock()
+
+	interval := ttl / 3
+	if interval < 100*time.Millisecond {
+		interval = 100 * time.Millisecond
+	}
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-cctx.Done():
+				return
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				ok, err := r.Renew(cctx, key, ttl)
+				if err != nil {
+					utils.Error("redis lock renew failed", zap.Error(err))
+				}
+				if !ok {
+					// 不是持有者或锁已失效，停止看门狗
+					return
+				}
+			}
+		}
+	}()
+
 	return func() {
 		r.mu.Lock()
-		if cur, ok := r.watchdogs[key]; ok && cur.id == myId {
+		if cur, ok := r.watchdogs[key]; ok && cur.id == rid {
 			delete(r.watchdogs, key)
 		}
 		r.mu.Unlock()
 		cancel()
 	}, nil
+}
+
+// acquireLockWithRetry 带重试的获取锁
+func (r *RedisCache) acquireLockWithRetry(ctx context.Context, key string, ttl, timeout time.Duration) error {
+	start := time.Now()
+	backoff := 25 * time.Millisecond
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		ok, err := r.TryLock(ctx, key, ttl)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+		if time.Since(start) > timeout {
+			return fmt.Errorf("acquire lock timeout")
+		}
+		time.Sleep(backoff + randomJitter(20))
+		if backoff < 500*time.Millisecond {
+			backoff *= 2
+		}
+	}
 }
 
 // Unlock 释放分布式锁
