@@ -18,6 +18,54 @@ func GetRequestMessageStruct(msgType string) (proto.Message, error) {
 		return &pb.GameStateRequest{}, nil
 	case "game.playerAction":
 		return &pb.PlayerActionRequest{}, nil
+	case "user.register":
+		return &pb.RegisterRequest{}, nil
+	case "user.login":
+		return &pb.LoginRequest{}, nil
+	case "user.getInventory":
+		return &pb.GetInventoryRequest{}, nil
+	case "user.addItem":
+		return &pb.AddItemRequest{}, nil
+	case "user.removeItem":
+		return &pb.RemoveItemRequest{}, nil
+	case "user.useItem":
+		return &pb.UseItemRequest{}, nil
+	case "user.getEquipments":
+		return &pb.GetEquipmentsRequest{}, nil
+	case "user.equipItem":
+		return &pb.EquipItemRequest{}, nil
+	case "user.unequipItem":
+		return &pb.UnequipItemRequest{}, nil
+	case "user.getUserInfo":
+		return &pb.GetUserInfoRequest{}, nil
+	case "user.getUserCards":
+		return &pb.GetUserCardsRequest{}, nil
+	case "user.activateCard":
+		return &pb.ActivateCardRequest{}, nil
+	case "user.upgradeCard":
+		return &pb.UpgradeCardRequest{}, nil
+	case "user.upgradeCardStar":
+		return &pb.UpgradeCardStarRequest{}, nil
+	case "user.getUserPets":
+		return &pb.GetUserPetsRequest{}, nil
+	case "user.addPet":
+		return &pb.AddPetRequest{}, nil
+	case "user.setPetBattleStatus":
+		return &pb.SetPetBattleStatusRequest{}, nil
+	case "user.addPetExp":
+		return &pb.AddPetExpRequest{}, nil
+	case "user.getMonthlySignInfo":
+		return &pb.GetMonthlySignInfoRequest{}, nil
+	case "user.monthlySign":
+		return &pb.MonthlySignRequest{}, nil
+	case "user.claimMonthlySignReward":
+		return &pb.ClaimMonthlySignRewardRequest{}, nil
+	case "leaderboard.reportScore":
+		return &pb.ReportScoreRequest{}, nil
+	case "leaderboard.getLeaderboard":
+		return &pb.GetLeaderboardRequest{}, nil
+	case "leaderboard.getRank":
+		return &pb.GetRankRequest{}, nil
 	case "social.sendChatMessage":
 		return &pb.SendChatMessageRequest{}, nil
 	case "social.getChatMessages":
@@ -60,30 +108,6 @@ func GetRequestMessageStruct(msgType string) (proto.Message, error) {
 		return &pb.LeaveGuildRequest{}, nil
 	case "social.getGuildList":
 		return &pb.GetGuildListRequest{}, nil
-	case "leaderboard.reportScore":
-		return &pb.ReportScoreRequest{}, nil
-	case "leaderboard.getLeaderboard":
-		return &pb.GetLeaderboardRequest{}, nil
-	case "leaderboard.getRank":
-		return &pb.GetRankRequest{}, nil
-	case "user.register":
-		return &pb.RegisterRequest{}, nil
-	case "user.login":
-		return &pb.LoginRequest{}, nil
-	case "user.getInventory":
-		return &pb.GetInventoryRequest{}, nil
-	case "user.addItem":
-		return &pb.AddItemRequest{}, nil
-	case "user.removeItem":
-		return &pb.RemoveItemRequest{}, nil
-	case "user.useItem":
-		return &pb.UseItemRequest{}, nil
-	case "user.getEquipments":
-		return &pb.GetEquipmentsRequest{}, nil
-	case "user.equipItem":
-		return &pb.EquipItemRequest{}, nil
-	case "user.unequipItem":
-		return &pb.UnequipItemRequest{}, nil
 	default:
 		return nil, fmt.Errorf("unknown request message type: %s", msgType)
 	}
@@ -99,6 +123,54 @@ func GetResponseMessageStruct(msgType string) (proto.Message, error) {
 		return &pb.GameStateResponse{}, nil
 	case "game.playerAction":
 		return &pb.PlayerActionResponse{}, nil
+	case "user.register":
+		return &pb.RegisterResponse{}, nil
+	case "user.login":
+		return &pb.LoginResponse{}, nil
+	case "user.getInventory":
+		return &pb.GetInventoryResponse{}, nil
+	case "user.addItem":
+		return &pb.AddItemResponse{}, nil
+	case "user.removeItem":
+		return &pb.RemoveItemResponse{}, nil
+	case "user.useItem":
+		return &pb.UseItemResponse{}, nil
+	case "user.getEquipments":
+		return &pb.GetEquipmentsResponse{}, nil
+	case "user.equipItem":
+		return &pb.EquipItemResponse{}, nil
+	case "user.unequipItem":
+		return &pb.UnequipItemResponse{}, nil
+	case "user.getUserInfo":
+		return &pb.GetUserInfoResponse{}, nil
+	case "user.getUserCards":
+		return &pb.GetUserCardsResponse{}, nil
+	case "user.activateCard":
+		return &pb.ActivateCardResponse{}, nil
+	case "user.upgradeCard":
+		return &pb.UpgradeCardResponse{}, nil
+	case "user.upgradeCardStar":
+		return &pb.UpgradeCardStarResponse{}, nil
+	case "user.getUserPets":
+		return &pb.GetUserPetsResponse{}, nil
+	case "user.addPet":
+		return &pb.AddPetResponse{}, nil
+	case "user.setPetBattleStatus":
+		return &pb.SetPetBattleStatusResponse{}, nil
+	case "user.addPetExp":
+		return &pb.AddPetExpResponse{}, nil
+	case "user.getMonthlySignInfo":
+		return &pb.GetMonthlySignInfoResponse{}, nil
+	case "user.monthlySign":
+		return &pb.MonthlySignResponse{}, nil
+	case "user.claimMonthlySignReward":
+		return &pb.ClaimMonthlySignRewardResponse{}, nil
+	case "leaderboard.reportScore":
+		return &pb.ReportScoreResponse{}, nil
+	case "leaderboard.getLeaderboard":
+		return &pb.GetLeaderboardResponse{}, nil
+	case "leaderboard.getRank":
+		return &pb.GetRankResponse{}, nil
 	case "social.sendChatMessage":
 		return &pb.SendChatMessageResponse{}, nil
 	case "social.getChatMessages":
@@ -141,30 +213,6 @@ func GetResponseMessageStruct(msgType string) (proto.Message, error) {
 		return &pb.LeaveGuildResponse{}, nil
 	case "social.getGuildList":
 		return &pb.GetGuildListResponse{}, nil
-	case "leaderboard.reportScore":
-		return &pb.ReportScoreResponse{}, nil
-	case "leaderboard.getLeaderboard":
-		return &pb.GetLeaderboardResponse{}, nil
-	case "leaderboard.getRank":
-		return &pb.GetRankResponse{}, nil
-	case "user.register":
-		return &pb.RegisterResponse{}, nil
-	case "user.login":
-		return &pb.LoginResponse{}, nil
-	case "user.getInventory":
-		return &pb.GetInventoryResponse{}, nil
-	case "user.addItem":
-		return &pb.AddItemResponse{}, nil
-	case "user.removeItem":
-		return &pb.RemoveItemResponse{}, nil
-	case "user.useItem":
-		return &pb.UseItemResponse{}, nil
-	case "user.getEquipments":
-		return &pb.GetEquipmentsResponse{}, nil
-	case "user.equipItem":
-		return &pb.EquipItemResponse{}, nil
-	case "user.unequipItem":
-		return &pb.UnequipItemResponse{}, nil
 	default:
 		return nil, fmt.Errorf("unknown response message type: %s", msgType)
 	}

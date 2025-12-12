@@ -1,83 +1,98 @@
 # 游戏服务器项目 (github.xubinbest.com/go-game-server)
 
-## 项目简介
-这是一个基于Go语言开发的微服务架构游戏服务器项目，采用现代化的技术栈和云原生设计理念。项目支持多种游戏服务组件，包括用户服务、社交服务、游戏服务、匹配服务、排行榜服务、日志服务等，为游戏提供完整的后端支持。
+## 📖 项目简介
 
-### 🎯 项目特色
-- **完整的游戏生态**: 涵盖用户管理、社交系统、游戏核心、排行榜等完整功能
-- **高性能架构**: 基于gRPC通信，支持WebSocket实时通信，Redis集群缓存
-- **云原生部署**: 完整的Kubernetes部署方案，支持Helm Chart和YAML两种方式
-- **可观测性**: 集成Prometheus监控、Grafana可视化、结构化日志
-- **数据驱动**: 支持CSV/Excel配置数据，灵活的游戏数据管理
+这是一个基于Go语言开发的**微服务架构游戏服务器项目**，采用现代化的技术栈和云原生设计理念。项目为多人在线游戏提供完整的后端支持，包括用户管理、社交互动、游戏逻辑、排行榜等核心功能。
 
-## 功能特性
+### 核心特点
+- 🏗️ **微服务架构**：6个独立服务，职责清晰，易于扩展
+- 🚀 **高性能**：支持万级并发，响应时间控制在100ms以内
+- 🔒 **高可用**：99.9%服务可用性，完善的容错和降级机制
+- ☁️ **云原生**：完整的Kubernetes部署方案，支持Helm Chart和YAML两种部署方式
+- 📦 **配置中心**：支持Nacos配置中心，配置热更新
+- 🎮 **游戏功能完整**：用户系统、社交系统、卡牌系统、宠物系统、装备系统等
 
-### 🏗️ 架构特性
-- 🚀 **高性能微服务架构**: 基于gRPC通信，支持水平扩展
-- 🐳 **Kubernetes容器化部署**: 完整的K8s部署方案
-- 🔍 **服务发现**: 支持Nacos/Etcd服务注册与发现
-- 📊 **监控体系**: Prometheus + Grafana完整监控方案
+## ✨ 功能特性
 
-### 🎮 游戏功能
-- 🔐 **用户系统**: 注册、登录、JWT认证、用户信息管理
-- 🎒 **背包系统**: 物品管理、装备系统、卡牌收集
-- 🐾 **宠物系统**: 宠物收集、升级、出战管理
-- 📅 **签到系统**: 月签到、累计奖励机制
-- 👥 **社交系统**: 好友系统、公会管理、实时聊天
-- 🎯 **匹配系统**: 智能匹配算法、房间管理
-- 📊 **排行榜**: 实时排行榜、分数统计
-- 💬 **实时通信**: WebSocket支持，消息路由
+### 核心功能
+- 🚀 **高性能微服务架构**：网关、用户、社交、游戏、排行榜、日志等6个服务
+- 🔐 **完整的用户认证系统**：JWT认证、用户注册登录、密码加密
+- 👥 **社交系统**：好友系统、公会系统、实时聊天（世界频道、私聊）
+- 🎮 **游戏核心服务**：游戏逻辑、战斗系统、状态管理
+- 📊 **实时排行榜**：支持多种排行榜类型，实时更新
+- 💬 **WebSocket实时通信**：支持WebSocket长连接，实时消息推送
+- 📝 **日志服务**：统一的日志收集和分析
 
-### 🛠️ 技术特性
-- 🗄️ **多数据库支持**: MySQL、MongoDB、Redis集群
-- 🔄 **消息队列**: Kafka消息队列，支持异步处理
-- 📝 **日志系统**: 结构化日志（zap），支持日志轮转
-- 🆔 **分布式ID**: 雪花算法生成唯一ID
-- ⚡ **缓存策略**: Redis集群缓存，提升性能
-- 🔒 **安全机制**: 限流、认证、数据加密
+### 游戏功能
+- 🎴 **卡牌系统**：卡牌激活、升级、升星
+- 🐾 **宠物系统**：宠物获取、培养、出战/休战
+- 🎒 **背包系统**：物品管理、装备系统
+- 📅 **月签到系统**：每日签到、累计奖励（使用位图优化存储）
+- ⚔️ **装备系统**：装备穿戴、属性管理
 
-## 技术栈
+### 技术特性
+- 🐳 **Kubernetes容器化部署**：完整的K8s部署配置，支持Helm和YAML两种方式
+- 🔍 **服务发现与配置中心**：支持Nacos/Etcd服务注册发现和配置管理
+- 📝 **完善的日志系统**：使用zap进行结构化日志，支持日志轮转
+- 📊 **监控体系**：Prometheus + Grafana监控，服务健康检查
+- 🔄 **消息队列**：Kafka消息队列，支持异步消息处理
+- 🗄️ **多数据库支持**：MySQL（结构化数据）+ MongoDB（非结构化数据）+ Redis（缓存）
+- 🆔 **分布式ID生成**：雪花算法生成唯一ID，支持Redis集群协调
+- 📋 **设计配置系统**：从配置中心加载游戏配置表（CSV/XLSX），支持热更新
 
-### 🔧 核心技术
-- **编程语言**: Go 1.23.0
-- **通信协议**: gRPC + Protocol Buffers
-- **Web框架**: gorilla/mux
-- **WebSocket**: gorilla/websocket
-- **认证**: JWT (golang-jwt/jwt/v5)
+## 🛠️ 技术栈
 
-### 🗄️ 数据存储
-- **关系数据库**: MySQL 8.0+ (GORM)
-- **文档数据库**: MongoDB (mongo-driver)
-- **缓存数据库**: Redis 6.0+ (go-redis/v9)
-- **消息队列**: Kafka (Sarama)
+### 编程语言
+- **Go 1.23.0+**：主要开发语言
 
-### 🏗️ 基础设施
-- **服务发现**: Nacos 2.0+ / Etcd
-- **容器编排**: Kubernetes
-- **监控**: Prometheus + Grafana
-- **日志**: Zap (结构化日志)
-- **限流**: Uber ratelimit
-- **ID生成**: 雪花算法
+### 核心框架
+- **Web框架**：gorilla/mux（HTTP路由）
+- **WebSocket**：gorilla/websocket（实时通信）
+- **RPC框架**：gRPC + Protocol Buffers（服务间通信）
+- **ORM**：GORM（MySQL操作）
+
+### 数据库
+- **MySQL 8.0+**：用户数据、社交关系、游戏数据等结构化数据
+- **MongoDB**：聊天记录、游戏日志等非结构化数据
+- **Redis 6.0+**：缓存、会话管理、分布式锁
+
+### 中间件与服务
+- **服务发现/配置中心**：Nacos 2.0+ / Etcd
+- **消息队列**：Kafka 2.8+ (Sarama)
+- **日志框架**：zap（结构化日志）
+- **限流**：go.uber.org/ratelimit
+- **认证**：golang-jwt/jwt/v5（JWT认证）
+
+### 容器化与编排
+- **容器化**：Docker
+- **容器编排**：Kubernetes
+- **包管理**：Helm Chart
+
+### 监控与运维
+- **监控**：Prometheus + Grafana
+- **日志收集**：ELK（可选）
+- **服务健康检查**：gRPC Health Check
 
 ## 项目结构
 ```
 github.xubinbest.com/go-game-server/
 ├── cmd/                    # 服务入口
-│   ├── gateway/           # 网关服务
-│   ├── user-service/      # 用户服务
-│   ├── social-service/    # 社交服务
-│   ├── game-service/      # 游戏服务
-│   ├── match-service/     # 匹配服务
-│   ├── leaderboard-service/ # 排行榜服务
+│   ├── gateway/           # 网关服务（HTTP + WebSocket）
+│   ├── user-service/      # 用户服务（gRPC）
+│   ├── social-service/    # 社交服务（gRPC）
+│   ├── game-service/      # 游戏服务（gRPC）
+│   ├── leaderboard-service/ # 排行榜服务（gRPC）
+│   ├── log-service/       # 日志服务（gRPC）
+│   ├── match-service/     # 匹配服务（预留）
 │   └── test/              # 测试服务
 ├── internal/              # 内部包
 │   ├── auth/             # 认证相关
 │   ├── cache/            # 缓存层
 │   ├── config/           # 配置管理
 │   ├── db/               # 数据库操作
-│   │   ├── interfaces/   # 数据库接口
+│   │   ├── interfaces/   # 数据库接口定义
 │   │   ├── models/       # 数据模型
-│   │   ├── mysql/        # MySQL实现
+│   │   ├── gorm/         # MySQL实现（GORM）
 │   │   └── mongodb/      # MongoDB实现
 │   ├── designconfig/     # 设计配置
 │   ├── gateway/          # 网关实现
@@ -117,79 +132,159 @@ github.xubinbest.com/go-game-server/
 └── examples/             # 示例代码
 ```
 
-## 核心服务
+## 🎯 核心服务
 
-### 网关服务 (Gateway)
-- **职责**: 请求路由、负载均衡、WebSocket连接管理
-- **特性**: 消息转发、客户端认证、限流熔断
-- **配置**: [cmd/gateway/config.yaml](cmd/gateway/config.yaml)
+### 1. 网关服务 (Gateway)
+**职责**：统一入口、请求路由、负载均衡、WebSocket连接管理
 
-### 用户服务 (User Service)
-- **职责**: 用户认证、注册、登录、装备管理
-- **特性**: JWT认证、背包系统、装备系统
-- **配置**: [cmd/user-service/config.yaml](cmd/user-service/config.yaml)
+**功能特性**：
+- HTTP和WebSocket双协议支持
+- 请求路由和消息转发（HTTP/gRPC/WebSocket）
+- 客户端认证和授权
+- 限流和熔断保护
+- gRPC连接池管理
+- 聊天消息广播
 
-### 社交服务 (Social Service)
-- **职责**: 好友系统、公会系统、聊天功能
-- **特性**: 实时聊天、好友关系、公会管理
-- **配置**: [cmd/social-service/config.yaml](cmd/social-service/config.yaml)
+**配置**：[cmd/gateway/config.yaml](cmd/gateway/config.yaml)
 
-### 游戏服务 (Game Service)
-- **职责**: 游戏核心逻辑、战斗系统、游戏状态管理
-- **特性**: 玩家加入/离开游戏、游戏状态查询、玩家操作处理
-- **API**: JoinGame, LeaveGame, GetGameState, PlayerAction
+### 2. 用户服务 (User Service)
+**职责**：用户管理、游戏数据管理
 
-### 匹配服务 (Match Service)
-- **职责**: 玩家匹配、房间管理
-- **特性**: 智能匹配算法、房间分配
-- **状态**: 开发中
+**功能特性**：
+- 用户注册、登录、JWT认证
+- 用户信息管理（等级、经验等）
+- 背包系统（物品增删改查）
+- 装备系统（装备/卸下装备）
+- 卡牌系统（激活、升级、升星）
+- 宠物系统（获取、培养、出战/休战）
+- 月签到系统（每日签到、累计奖励，使用位图优化）
 
-### 日志服务 (Log Service)
-- **职责**: 日志收集、存储、分析
-- **特性**: 结构化日志处理、日志聚合
-- **配置**: [cmd/log-service/config.yaml](cmd/log-service/config.yaml)
+**配置**：[cmd/user-service/config.yaml](cmd/user-service/config.yaml)
 
-### 排行榜服务 (Leaderboard Service)
-- **职责**: 排行榜数据管理、分数统计
-- **特性**: 实时排行榜、分数排序、个人排名查询
-- **API**: ReportScore, GetLeaderboard, GetRank
-- **配置**: [cmd/leaderboard-service/config.yaml](cmd/leaderboard-service/config.yaml)
+### 3. 社交服务 (Social Service)
+**职责**：社交关系管理、聊天功能
+
+**功能特性**：
+- 好友系统（添加、删除、批量处理好友请求）
+- 公会系统（创建、加入、管理、职位管理）
+- 聊天功能（世界频道、私聊、历史消息）
+- 消息持久化（MongoDB存储）
+
+**配置**：[cmd/social-service/config.yaml](cmd/social-service/config.yaml)
+
+### 4. 游戏服务 (Game Service)
+**职责**：游戏核心逻辑、战斗系统
+
+**功能特性**：
+- 游戏状态管理
+- 战斗计算
+- 游戏规则引擎
+
+### 5. 排行榜服务 (Leaderboard Service)
+**职责**：排行榜数据管理、分数统计
+
+**功能特性**：
+- 实时排行榜更新
+- 多种排行榜类型支持
+- 分数排序和统计
+- Redis缓存优化
+
+**配置**：[cmd/leaderboard-service/config.yaml](cmd/leaderboard-service/config.yaml)
+
+### 6. 日志服务 (Log Service)
+**职责**：日志收集、存储和分析
+
+**功能特性**：
+- 统一日志收集
+- 日志持久化存储
+- 日志查询和分析
+
+**配置**：[cmd/log-service/config.yaml](cmd/log-service/config.yaml)
+
+### 7. 匹配服务 (Match Service)
+**职责**：玩家匹配、房间管理（预留）
+
+**功能特性**：
+- 智能匹配算法
+- 房间分配和管理
 
 ## 快速开始
 
 ### 环境要求
-- Go 1.23.0 或更高版本
-- Docker
-- Kubernetes集群
-- NFS服务器
-- MySQL 8.0+
-- Redis 6.0+
-- Nacos 2.0+
-- Kafka 2.8+
 
-### 构建步骤
+#### 开发环境
+- **Go**: 1.23.0 或更高版本
+- **Protocol Buffers**: protoc 编译器
+- **Make**: 用于构建脚本（可选）
 
-1. **克隆项目**
+#### 运行环境
+- **Docker**: 用于容器化部署
+- **Kubernetes**: 1.20+ 集群
+- **NFS服务器**: 用于持久化存储（可选）
+
+#### 基础设施
+- **MySQL**: 8.0+（结构化数据存储）
+- **MongoDB**: 4.0+（非结构化数据存储）
+- **Redis**: 6.0+（缓存和会话管理）
+- **Nacos**: 2.0+（服务发现和配置中心）
+- **Kafka**: 2.8+（消息队列）
+- **Prometheus**: 监控指标收集
+- **Grafana**: 监控数据可视化
+
+### 本地开发
+
+#### 1. 克隆项目
 ```bash
 git clone [项目地址]
 cd github.xubinbest.com/go-game-server
 ```
 
-2. **安装依赖**
+#### 2. 安装依赖
 ```bash
 go mod download
 ```
 
-3. **生成Protocol Buffers文件**
+#### 3. 生成Protocol Buffers文件
 ```bash
 # Windows
 ./scripts/gen_proto.bat
 
 # Linux/Mac
-protoc --go_out=. --go-grpc_out=. internal/pb/*.proto
+chmod +x scripts/gen_proto.bat
+./scripts/gen_proto.bat
 ```
 
-4. **构建Docker镜像**
+#### 4. 配置环境变量
+```bash
+# 设置配置位置（local表示使用本地配置文件）
+export CONFIG_LOCATION=local
+
+# 设置服务注册类型（nacos或etcd）
+export REGISTRY_TYPE=nacos
+
+# Nacos配置
+export NACOS_NAMESPACE=your_namespace
+export NACOS_SERVER=your_nacos_host
+export NACOS_PORT=8848
+export NACOS_GROUP=DEFAULT_GROUP
+export NACOS_TIMEOUT=5000
+```
+
+#### 5. 启动服务（本地开发）
+```bash
+# 启动网关服务
+./bin/scrpit/start_gateway.cmd
+
+# 启动用户服务
+./bin/scrpit/start_user.cmd
+
+# 启动社交服务
+./bin/scrpit/start_social.cmd
+```
+
+### Docker构建
+
+#### 构建镜像
 ```bash
 # 构建所有服务
 make build-all
@@ -199,10 +294,10 @@ make build-gateway
 make build-social
 make build-user
 make build-leaderboard
-make build-log-service
+make build-log
 ```
 
-5. **推送镜像到仓库**
+#### 推送镜像
 ```bash
 # 推送所有服务镜像
 make push-all
@@ -212,33 +307,10 @@ make push-gateway
 make push-social
 make push-user
 make push-leaderboard
-make push-log-service
+make push-log
 ```
 
-### 本地开发
-
-1. **启动基础服务**
-```bash
-# 启动Redis集群
-# 启动MySQL
-# 启动Nacos
-# 启动Kafka
-```
-
-2. **运行服务**
-```bash
-# 启动网关服务
-go run cmd/gateway/main.go
-
-# 启动用户服务
-go run cmd/user-service/main.go
-
-# 启动社交服务
-go run cmd/social-service/main.go
-
-# 启动排行榜服务
-go run cmd/leaderboard-service/main.go
-```
+**注意**：镜像仓库地址在 `Makefile` 中配置，默认使用 `192.168.101.2:5000`
 
 ## 部署说明
 
@@ -272,87 +344,186 @@ go run cmd/leaderboard-service/main.go
    - Leaderboard服务
    - Ingress配置
 
-## 开发指南
+## 💻 开发指南
 
 ### 代码规范
-- 遵循Go标准代码规范
-- 使用gofmt格式化代码
-- 编写单元测试
-- 添加必要的注释
-- 使用统一的错误处理机制
 
-### 提交规范
+- **文件行数限制**：
+  - 每个Go文件不超过250行
+  - 每个文件夹文件数不超过8个
+- **代码风格**：
+  - 遵循Go官方代码规范
+  - 使用 `gofmt` 格式化代码
+  - 使用 `golint` 检查代码质量
+- **注释规范**：
+  - 公共函数和类型必须添加注释
+  - 使用Go标准注释格式
+- **错误处理**：
+  - 使用统一的错误处理机制
+  - 错误信息要清晰明确
+
+### Git提交规范
+
+遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
+
 ```
 feat: 新功能
 fix: 修复bug
 docs: 文档更新
-style: 代码格式
-refactor: 重构
+style: 代码格式（不影响代码运行的变动）
+refactor: 重构（既不是新增功能，也不是修复bug）
 test: 测试相关
 chore: 构建过程或辅助工具的变动
+perf: 性能优化
+ci: CI配置文件和脚本的变动
 ```
 
 ### 开发工具
-- **协议生成**: [scripts/gen_proto.bat](scripts/gen_proto.bat)
-- **K8s同步**: [scripts/sync_k8s.bat](scripts/sync_k8s.bat)
-- **启动脚本**: [bin/scrpit/](bin/scrpit)
 
-## 数据库设计
+- **协议生成**: [scripts/gen_proto.bat](scripts/gen_proto.bat) - 生成gRPC代码
+- **K8s同步**: [scripts/sync_k8s.bat](scripts/sync_k8s.bat) - 同步K8s配置
+- **启动脚本**: [bin/scrpit/](bin/scrpit) - 本地开发启动脚本
+
+### 项目架构原则
+
+- **依赖注入**：使用构造函数注入，避免全局变量
+- **接口抽象**：数据库操作通过接口抽象，支持多种实现
+- **业务逻辑**：业务逻辑在应用层实现，数据库只做CRUD操作
+- **配置管理**：配置通过配置中心管理，支持热更新
+- **错误处理**：统一的错误处理和日志记录
+
+## 🗄️ 数据库设计
 
 ### 多数据库架构
-- **MySQL**: 用户数据、社交关系、游戏数据等结构化数据
-- **MongoDB**: 聊天记录、游戏日志、非结构化数据
-- **Redis**: 会话管理、排行榜、实时数据缓存
+
+项目采用多数据库架构，根据数据特性选择合适的存储方案：
+
+| 数据库 | 用途 | 存储内容 |
+|--------|------|---------|
+| **MySQL** | 结构化数据 | 用户数据、社交关系、游戏数据、装备、背包、卡牌、宠物等 |
+| **MongoDB** | 非结构化数据 | 聊天记录、游戏日志、用户行为数据等 |
+| **Redis** | 缓存和会话 | 会话管理、排行榜、实时数据缓存、分布式锁 |
 
 ### 数据模型
-- **用户模型**: [internal/db/models/user.go](internal/db/models/user.go)
-- **好友模型**: [internal/db/models/friend.go](internal/db/models/friend.go)
-- **公会模型**: [internal/db/models/guild.go](internal/db/models/guild.go)
-- **背包模型**: [internal/db/models/inventory.go](internal/db/models/inventory.go)
-- **卡牌模型**: [internal/db/models/card.go](internal/db/models/card.go)
-- **宠物模型**: [internal/db/models/pet.go](internal/db/models/pet.go)
 
-### 游戏配置数据
-- **卡牌配置**: [data/csv/card.csv](data/csv/card.csv)
-- **装备配置**: [data/csv/equip.csv](data/csv/equip.csv)
-- **物品配置**: [data/csv/item.csv](data/csv/item.csv)
-- **宠物配置**: [data/csv/pet.csv](data/csv/pet.csv)
-- **等级配置**: [data/csv/level.csv](data/csv/level.csv)
+#### 用户相关
+- **用户模型**: [internal/db/models/user.go](internal/db/models/user.go) - 用户基本信息、等级、经验
+- **月签到模型**: [internal/db/models/user.go](internal/db/models/user.go) - 月签到数据（使用位图优化）
 
-## 监控和日志
+#### 社交相关
+- **好友模型**: [internal/db/models/friend.go](internal/db/models/friend.go) - 好友关系
+- **公会模型**: [internal/db/models/guild.go](internal/db/models/guild.go) - 公会信息、成员关系
+
+#### 游戏相关
+- **背包模型**: [internal/db/models/inventory.go](internal/db/models/inventory.go) - 物品、装备
+- **卡牌模型**: [internal/db/models/card.go](internal/db/models/card.go) - 卡牌数据
+- **宠物模型**: [internal/db/models/pet.go](internal/db/models/pet.go) - 宠物数据
+
+### 设计配置系统
+
+**重要**：物品和装备模板不存储在数据库表中，而是通过 `internal/designconfig/` 包从配置中心（Nacos）加载到内存中。
+
+- **配置表格式**：支持CSV和XLSX格式
+- **配置表类型**：物品、装备、卡牌、宠物、等级、月签到等
+- **热更新**：支持配置热更新，无需重启服务
+- **配置位置**：[data/csv/](data/csv/) 和 [data/xlsx/](data/xlsx/)
+
+### 数据库初始化
+
+```bash
+# 初始化游戏数据库
+mysql -u root -p < sql/game_db.sql
+
+# 初始化日志数据库
+mysql -u root -p < sql/log_db.sql
+```
+
+## 📊 监控和日志
 
 ### 日志系统
-- 使用zap进行结构化日志
-- 支持日志轮转
-- 集成ELK日志分析
+
+- **日志框架**：使用 `zap` 进行结构化日志
+- **日志级别**：DEBUG、INFO、WARN、ERROR、FATAL
+- **日志格式**：JSON格式，便于日志分析
+- **日志轮转**：支持日志文件轮转，防止磁盘空间不足
+- **日志收集**：可集成ELK（Elasticsearch、Logstash、Kibana）进行日志分析
 
 ### 监控系统
-- Prometheus指标收集
-- Grafana仪表盘展示
-- 服务健康检查
-- 性能指标监控
+
+- **指标收集**：Prometheus收集服务指标
+- **可视化**：Grafana展示监控数据
+- **健康检查**：gRPC Health Check协议
+- **性能监控**：
+  - 请求响应时间
+  - 请求QPS
+  - 错误率
+  - 资源使用率（CPU、内存）
 
 ### 告警机制
-- 服务异常告警
-- 性能指标告警
-- 资源使用告警
 
-## 常见问题
+- **服务异常告警**：服务宕机、健康检查失败
+- **性能指标告警**：响应时间过长、QPS异常
+- **资源使用告警**：CPU、内存使用率过高
+
+### 监控配置
+
+监控组件部署配置位于：
+- **Helm Chart**: [K8s/Helm/game-monitoring/](K8s/Helm/game-monitoring/)
+- **YAML配置**: [K8s/Yaml/prometheus/](K8s/Yaml/prometheus/) 和 [K8s/Yaml/grafana/](K8s/Yaml/grafana/)
+
+## ❓ 常见问题
 
 ### 1. 服务启动失败
-- 检查配置文件是否正确
-- 确认依赖服务是否正常运行
-- 查看日志文件排查问题
+
+**问题**：服务无法启动或立即退出
+
+**解决方案**：
+- 检查环境变量是否配置正确（`CONFIG_LOCATION`、`REGISTRY_TYPE`等）
+- 确认依赖服务是否正常运行（MySQL、Redis、Nacos等）
+- 查看日志文件排查具体错误
+- 检查配置文件格式是否正确（YAML格式）
 
 ### 2. 性能问题
-- 检查系统资源使用情况
-- 优化数据库查询
-- 调整缓存策略
+
+**问题**：响应时间过长、QPS低
+
+**解决方案**：
+- 检查系统资源使用情况（CPU、内存、网络）
+- 优化数据库查询（添加索引、优化SQL）
+- 调整缓存策略（增加缓存命中率）
+- 检查gRPC连接池配置
+- 查看是否有慢查询日志
 
 ### 3. 连接问题
-- 检查网络配置
-- 验证服务发现配置
+
+**问题**：服务间无法通信、连接超时
+
+**解决方案**：
+- 检查网络配置（K8s Service、Ingress）
+- 验证服务发现配置（Nacos/Etcd连接）
 - 确认防火墙设置
+- 检查服务注册是否成功
+- 验证gRPC端口是否正确
+
+### 4. 配置中心问题
+
+**问题**：无法从Nacos加载配置
+
+**解决方案**：
+- 检查Nacos连接配置（host、port、namespace）
+- 确认配置文件中配置的dataId和group是否存在
+- 检查Nacos服务是否正常运行
+- 验证网络连通性
+
+### 5. 数据库连接问题
+
+**问题**：无法连接数据库
+
+**解决方案**：
+- 检查数据库连接字符串（DSN）
+- 确认数据库用户权限
+- 验证网络连通性
+- 检查数据库连接池配置
 
 ## 贡献指南
 
@@ -362,54 +533,47 @@ chore: 构建过程或辅助工具的变动
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 创建Pull Request
 
-## API文档
+## 许可证
+[添加许可证信息]
 
-### 服务接口概览
+## 联系方式
+[添加联系方式]
 
-#### 用户服务 (User Service)
-- **认证**: Register, Login
-- **背包**: GetInventory, AddItem, RemoveItem, UseItem
-- **装备**: GetEquipments, EquipItem, UnequipItem
-- **卡牌**: GetUserCards, ActivateCard, UpgradeCard, UpgradeCardStar
-- **宠物**: GetUserPets, AddPet, SetPetBattleStatus, AddPetExp
-- **签到**: GetMonthlySignInfo, MonthlySign, ClaimMonthlySignReward
+## 📚 相关文档
 
-#### 社交服务 (Social Service)
-- **好友**: GetFriendList, SendFriendRequest, HandleFriendRequest, DeleteFriend
-- **公会**: CreateGuild, GetGuildInfo, ApplyToGuild, InviteToGuild, KickGuildMember
-- **聊天**: SendChatMessage, GetChatMessages
+- [Kratos迁移评估报告](docs/kratos_migration_assessment.md) - Kratos框架改造可行性评估
+- [K8s部署指南](K8s/DEPLOYMENT_GUIDE.md) - 完整的Kubernetes部署指南
+- [YAML部署指南](K8s/DEPLOYMENT_GUIDE_YAML.md) - 使用YAML文件部署
+- [Helm部署指南](K8s/DEPLOYMENT_GUIDE_HELM.md) - 使用Helm Chart部署
+- [客户端示例](client/README.md) - 客户端使用示例
 
-#### 游戏服务 (Game Service)
-- **游戏**: JoinGame, LeaveGame, GetGameState, PlayerAction
-
-#### 排行榜服务 (Leaderboard Service)
-- **排行榜**: ReportScore, GetLeaderboard, GetRank
-
-### WebSocket消息格式
-```protobuf
-message WSMessage {
-  string service = 1;  // 服务名称
-  string method = 2;   // 方法名称
-  bytes payload = 3;   // Protocol Buffers 序列化后的数据
-}
-```
-
-## 更新日志
+## 🔄 更新日志
 
 ### v1.0.0 (当前版本)
-- ✅ 完整的微服务架构设计
-- ✅ 用户服务：认证、背包、装备、卡牌、宠物、签到系统
-- ✅ 社交服务：好友系统、公会管理、实时聊天
-- ✅ 游戏服务：基础游戏逻辑
-- ✅ 排行榜服务：分数统计、排名查询
-- ✅ 日志服务：结构化日志处理
+- ✅ 初始版本发布
+- ✅ 完整的微服务架构（6个服务）
+- ✅ 用户系统（注册、登录、背包、装备、卡牌、宠物、月签到）
+- ✅ 社交系统（好友、公会、聊天）
+- ✅ 游戏服务和排行榜服务
+- ✅ WebSocket实时通信
 - ✅ Kubernetes部署支持（Helm + YAML）
-- ✅ 监控体系：Prometheus + Grafana
-- ✅ 多数据库支持：MySQL + MongoDB + Redis
-- ✅ 消息队列：Kafka集成
-- ✅ 客户端示例代码
+- ✅ 多数据库支持（MySQL + MongoDB + Redis）
+- ✅ 配置中心集成（Nacos）
+- ✅ 监控和日志系统
 
-### 待开发功能
-- 🔄 匹配服务：智能匹配算法
-- 🔄 游戏核心：战斗系统、技能系统
-- 🔄 更多游戏玩法：副本、PVP等 
+## 📄 许可证
+
+[添加许可证信息]
+
+## 👥 贡献者
+
+[添加贡献者信息]
+
+## 📮 联系方式
+
+[添加联系方式]
+
+---
+
+**项目状态**：🟢 活跃开发中  
+**最后更新**：2025年 

@@ -9,6 +9,9 @@ import (
 
 type Cache interface {
 	Close() error
+	SetToken(ctx context.Context, userID int64, token string, expiration time.Duration) error
+	GetToken(ctx context.Context, userID int64) (string, error)
+	DeleteToken(ctx context.Context, userID int64) error
 
 	// 通用缓存方法
 	SPop(ctx context.Context, key string) *redis.StringCmd
@@ -26,8 +29,6 @@ type Cache interface {
 	// 分布式锁方法
 	TryLock(ctx context.Context, key string, ttl time.Duration) (bool, error)
 	Lock(ctx context.Context, key string, ttl time.Duration, timeout time.Duration) error
-	// StartWatchdog 在已持有锁的前提下启动看门狗，自动续约
-	StartWatchdog(ctx context.Context, key string, ttl time.Duration) (context.CancelFunc, error)
 	Unlock(ctx context.Context, key string) error
 
 	// 订阅/发布

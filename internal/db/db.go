@@ -42,9 +42,6 @@ type Database interface {
 
 	// 宠物相关方法
 	interfaces.PetDatabase
-
-	// 用户日志相关方法
-	interfaces.UserLogDatabase
 }
 
 // DatabaseClient 实现 Database 接口，使用组合模式
@@ -66,7 +63,6 @@ type DatabaseClient struct {
 	inventoryDB interfaces.InventoryDatabase
 	cardDB      interfaces.CardDatabase
 	petDB       interfaces.PetDatabase
-	logDB       interfaces.UserLogDatabase
 }
 
 // NewDatabaseClient 创建数据库客户端实例
@@ -114,7 +110,6 @@ func (c *DatabaseClient) initGORM() error {
 	c.inventoryDB = gorm.NewGormInventoryDatabase(gormDB, c.sf)
 	c.cardDB = gorm.NewGormCardDatabase(gormDB, c.sf)
 	c.petDB = gorm.NewGormPetDatabase(gormDB, c.sf)
-	c.logDB = gormClient // GormDatabaseClient 实现了 UserLogDatabase 接口
 
 	return nil
 }
@@ -143,7 +138,6 @@ func (c *DatabaseClient) initMongoDB() error {
 	c.guildDB = mongodb.NewMongoDBGuildDatabase(c.mongoDB, dbName, c.sf)
 	c.inventoryDB = mongodb.NewMongoDBInventoryDatabase(c.mongoDB, dbName, c.sf)
 	c.cardDB = mongodb.NewMongoDBCardDatabase(c.mongoDB, dbName, c.sf)
-	c.logDB = nil // TODO: 实现MongoDB的UserLogDatabase
 
 	return nil
 }

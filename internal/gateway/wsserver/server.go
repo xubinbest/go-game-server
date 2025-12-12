@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,11 +40,71 @@ func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				return true // TODO: implement proper origin check
-			},
+			CheckOrigin:     createOriginChecker(cfg),
 		},
 	}
+}
+
+// createOriginChecker 创建Origin检查函数
+func createOriginChecker(cfg *config.Config) func(*http.Request) bool {
+	// 如果未启用Origin检查，允许所有来源（仅用于开发环境）
+	if !cfg.WebSocket.CheckOrigin {
+		return func(r *http.Request) bool {
+			return true
+		}
+	}
+
+	// 如果没有配置允许的Origin列表，默认允许所有（不推荐生产环境）
+	if len(cfg.WebSocket.AllowedOrigins) == 0 {
+		return func(r *http.Request) bool {
+			return true
+		}
+	}
+
+	// 创建允许的Origin集合（用于快速查找）
+	allowedOrigins := make(map[string]bool, len(cfg.WebSocket.AllowedOrigins))
+	for _, origin := range cfg.WebSocket.AllowedOrigins {
+		allowedOrigins[origin] = true
+	}
+
+	return func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			// 如果没有Origin头，可能是同源请求（浏览器直接访问）
+			// 可以根据需要决定是否允许
+			return true
+		}
+
+		// 检查Origin是否在允许列表中
+		if allowedOrigins[origin] {
+			return true
+		}
+
+		// 支持通配符匹配（例如：*.example.com）
+		for allowedOrigin := range allowedOrigins {
+			if matchesWildcard(origin, allowedOrigin) {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+// matchesWildcard 检查origin是否匹配通配符模式
+// 例如：*.example.com 匹配 https://sub.example.com
+func matchesWildcard(origin, pattern string) bool {
+	if !strings.Contains(pattern, "*") {
+		return false
+	}
+
+	// 简单的通配符匹配实现
+	// 将 *.example.com 转换为正则表达式
+	pattern = strings.ReplaceAll(pattern, ".", "\\.")
+	pattern = strings.ReplaceAll(pattern, "*", ".*")
+
+	matched, err := regexp.MatchString("^"+pattern+"$", origin)
+	return err == nil && matched
 }
 
 func (s *WSServer) selectInstance(instances []*registry.ServiceInstance) string {

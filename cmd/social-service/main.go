@@ -26,6 +26,15 @@ import (
 )
 
 func main() {
+	// Initialize logger first
+	logger, err := utils.NewLogger()
+	if err != nil {
+		// Fallback to zap default logger if initialization fails
+		logger, _ = zap.NewProduction()
+	}
+	utils.SetLogger(logger)
+	defer utils.Sync()
+
 	// Initialize service registry
 	reg, err := registry.NewRegistry()
 	if err != nil {
@@ -82,7 +91,10 @@ func main() {
 	healthpb.RegisterHealthServer(grpcServer, healthServer)
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 
-	socialGRPCServer := social.NewSocialGRPCServer(dbClient, cacheClient, sf, cfg, configManager)
+	socialGRPCServer, err := social.NewSocialGRPCServer(dbClient, cacheClient, sf, cfg, configManager)
+	if err != nil {
+		utils.Fatal("Failed to create social gRPC server", zap.Error(err))
+	}
 	pb.RegisterSocialServiceServer(grpcServer, socialGRPCServer)
 
 	// Get pod IP from environment variable (set by Kubernetes Downward API)

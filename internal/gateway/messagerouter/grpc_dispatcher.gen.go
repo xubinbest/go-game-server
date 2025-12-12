@@ -48,6 +48,198 @@ func DispatchGRPCRequest(ctx context.Context, conn interface{}, req proto.Messag
 			return nil, err
 		}
 		return resp, nil
+	case "user.RegisterRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.Register(ctx, req.(*pb.RegisterRequest))
+		if err != nil {
+			utils.Error("Error calling Register", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.LoginRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.Login(ctx, req.(*pb.LoginRequest))
+		if err != nil {
+			utils.Error("Error calling Login", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.GetInventoryRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetInventory(ctx, req.(*pb.GetInventoryRequest))
+		if err != nil {
+			utils.Error("Error calling GetInventory", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.AddItemRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.AddItem(ctx, req.(*pb.AddItemRequest))
+		if err != nil {
+			utils.Error("Error calling AddItem", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.RemoveItemRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.RemoveItem(ctx, req.(*pb.RemoveItemRequest))
+		if err != nil {
+			utils.Error("Error calling RemoveItem", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.UseItemRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.UseItem(ctx, req.(*pb.UseItemRequest))
+		if err != nil {
+			utils.Error("Error calling UseItem", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.GetEquipmentsRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetEquipments(ctx, req.(*pb.GetEquipmentsRequest))
+		if err != nil {
+			utils.Error("Error calling GetEquipments", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.EquipItemRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.EquipItem(ctx, req.(*pb.EquipItemRequest))
+		if err != nil {
+			utils.Error("Error calling EquipItem", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.UnequipItemRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.UnequipItem(ctx, req.(*pb.UnequipItemRequest))
+		if err != nil {
+			utils.Error("Error calling UnequipItem", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.GetUserInfoRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetUserInfo(ctx, req.(*pb.GetUserInfoRequest))
+		if err != nil {
+			utils.Error("Error calling GetUserInfo", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.GetUserCardsRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetUserCards(ctx, req.(*pb.GetUserCardsRequest))
+		if err != nil {
+			utils.Error("Error calling GetUserCards", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.ActivateCardRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.ActivateCard(ctx, req.(*pb.ActivateCardRequest))
+		if err != nil {
+			utils.Error("Error calling ActivateCard", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.UpgradeCardRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.UpgradeCard(ctx, req.(*pb.UpgradeCardRequest))
+		if err != nil {
+			utils.Error("Error calling UpgradeCard", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.UpgradeCardStarRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.UpgradeCardStar(ctx, req.(*pb.UpgradeCardStarRequest))
+		if err != nil {
+			utils.Error("Error calling UpgradeCardStar", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.GetUserPetsRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetUserPets(ctx, req.(*pb.GetUserPetsRequest))
+		if err != nil {
+			utils.Error("Error calling GetUserPets", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.AddPetRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.AddPet(ctx, req.(*pb.AddPetRequest))
+		if err != nil {
+			utils.Error("Error calling AddPet", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.SetPetBattleStatusRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.SetPetBattleStatus(ctx, req.(*pb.SetPetBattleStatusRequest))
+		if err != nil {
+			utils.Error("Error calling SetPetBattleStatus", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.AddPetExpRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.AddPetExp(ctx, req.(*pb.AddPetExpRequest))
+		if err != nil {
+			utils.Error("Error calling AddPetExp", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.GetMonthlySignInfoRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetMonthlySignInfo(ctx, req.(*pb.GetMonthlySignInfoRequest))
+		if err != nil {
+			utils.Error("Error calling GetMonthlySignInfo", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.MonthlySignRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.MonthlySign(ctx, req.(*pb.MonthlySignRequest))
+		if err != nil {
+			utils.Error("Error calling MonthlySign", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "user.ClaimMonthlySignRewardRequest":
+		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.ClaimMonthlySignReward(ctx, req.(*pb.ClaimMonthlySignRewardRequest))
+		if err != nil {
+			utils.Error("Error calling ClaimMonthlySignReward", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "leaderboard.ReportScoreRequest":
+		client := pb.NewLeaderboardServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.ReportScore(ctx, req.(*pb.ReportScoreRequest))
+		if err != nil {
+			utils.Error("Error calling ReportScore", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "leaderboard.GetLeaderboardRequest":
+		client := pb.NewLeaderboardServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetLeaderboard(ctx, req.(*pb.GetLeaderboardRequest))
+		if err != nil {
+			utils.Error("Error calling GetLeaderboard", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
+	case "leaderboard.GetRankRequest":
+		client := pb.NewLeaderboardServiceClient(conn.(*grpc.ClientConn))
+		resp, err := client.GetRank(ctx, req.(*pb.GetRankRequest))
+		if err != nil {
+			utils.Error("Error calling GetRank", zap.Error(err))
+			return nil, err
+		}
+		return resp, nil
 	case "social.GetFriendListRequest":
 		client := pb.NewSocialServiceClient(conn.(*grpc.ClientConn))
 		resp, err := client.GetFriendList(ctx, req.(*pb.GetFriendListRequest))
@@ -213,102 +405,6 @@ func DispatchGRPCRequest(ctx context.Context, conn interface{}, req proto.Messag
 		resp, err := client.GetChatMessages(ctx, req.(*pb.GetChatMessagesRequest))
 		if err != nil {
 			utils.Error("Error calling GetChatMessages", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "leaderboard.ReportScoreRequest":
-		client := pb.NewLeaderboardServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.ReportScore(ctx, req.(*pb.ReportScoreRequest))
-		if err != nil {
-			utils.Error("Error calling ReportScore", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "leaderboard.GetLeaderboardRequest":
-		client := pb.NewLeaderboardServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.GetLeaderboard(ctx, req.(*pb.GetLeaderboardRequest))
-		if err != nil {
-			utils.Error("Error calling GetLeaderboard", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "leaderboard.GetRankRequest":
-		client := pb.NewLeaderboardServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.GetRank(ctx, req.(*pb.GetRankRequest))
-		if err != nil {
-			utils.Error("Error calling GetRank", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.RegisterRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.Register(ctx, req.(*pb.RegisterRequest))
-		if err != nil {
-			utils.Error("Error calling Register", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.LoginRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.Login(ctx, req.(*pb.LoginRequest))
-		if err != nil {
-			utils.Error("Error calling Login", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.GetInventoryRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.GetInventory(ctx, req.(*pb.GetInventoryRequest))
-		if err != nil {
-			utils.Error("Error calling GetInventory", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.AddItemRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.AddItem(ctx, req.(*pb.AddItemRequest))
-		if err != nil {
-			utils.Error("Error calling AddItem", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.RemoveItemRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.RemoveItem(ctx, req.(*pb.RemoveItemRequest))
-		if err != nil {
-			utils.Error("Error calling RemoveItem", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.UseItemRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.UseItem(ctx, req.(*pb.UseItemRequest))
-		if err != nil {
-			utils.Error("Error calling UseItem", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.GetEquipmentsRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.GetEquipments(ctx, req.(*pb.GetEquipmentsRequest))
-		if err != nil {
-			utils.Error("Error calling GetEquipments", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.EquipItemRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.EquipItem(ctx, req.(*pb.EquipItemRequest))
-		if err != nil {
-			utils.Error("Error calling EquipItem", zap.Error(err))
-			return nil, err
-		}
-		return resp, nil
-	case "user.UnequipItemRequest":
-		client := pb.NewUserServiceClient(conn.(*grpc.ClientConn))
-		resp, err := client.UnequipItem(ctx, req.(*pb.UnequipItemRequest))
-		if err != nil {
-			utils.Error("Error calling UnequipItem", zap.Error(err))
 			return nil, err
 		}
 		return resp, nil

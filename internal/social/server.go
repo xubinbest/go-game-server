@@ -16,13 +16,16 @@ type SocialGRPCServer struct {
 	handler SocialHandler
 }
 
-func NewSocialGRPCServer(dbClient db.Database, cacheClient cache.Cache, sf *snowflake.Snowflake, cfg *config.Config, configManager *designconfig.DesignConfigManager) *SocialGRPCServer {
+func NewSocialGRPCServer(dbClient db.Database, cacheClient cache.Cache, sf *snowflake.Snowflake, cfg *config.Config, configManager *designconfig.DesignConfigManager) (*SocialGRPCServer, error) {
 	cacheManager := cache.NewCacheManager(cacheClient)
-	handler := NewHandler(dbClient, cacheClient, cacheManager, sf, cfg, configManager)
+	handler, err := NewHandler(dbClient, cacheClient, cacheManager, sf, cfg, configManager)
+	if err != nil {
+		return nil, err
+	}
 	return &SocialGRPCServer{
 		UnimplementedSocialServiceServer: pb.UnimplementedSocialServiceServer{},
 		handler:                          handler,
-	}
+	}, nil
 }
 
 // 好友相关接口

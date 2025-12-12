@@ -19,6 +19,7 @@ type Config struct {
 	Database     DatabaseConfig     `yaml:"database"`
 	Auth         AuthConfig         `yaml:"auth"`
 	RateLimit    RateLimitConfig    `yaml:"rateLimit"`
+	WebSocket    WebSocketConfig    `yaml:"websocket"`
 	Kafka        KafkaConfig        `yaml:"kafka"`
 	KafkaConfigs KafkaConfigs       `yaml:"kafka_configs"`
 }
@@ -79,6 +80,11 @@ type AuthConfig struct {
 type RateLimitConfig struct {
 	RequestsPerSecond int `yaml:"requestsPerSecond"`
 	Burst             int `yaml:"burst"`
+}
+
+type WebSocketConfig struct {
+	AllowedOrigins []string `yaml:"allowedOrigins"` // 允许的Origin列表，空列表表示允许所有
+	CheckOrigin    bool     `yaml:"checkOrigin"`    // 是否启用Origin检查
 }
 
 type KafkaConfig struct {

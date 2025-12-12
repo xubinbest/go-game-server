@@ -23,6 +23,14 @@ import (
 )
 
 func main() {
+	// Initialize logger first
+	logger, err := utils.NewLogger()
+	if err != nil {
+		// Fallback to zap default logger if initialization fails
+		logger, _ = zap.NewProduction()
+	}
+	utils.SetLogger(logger)
+	defer utils.Sync()
 
 	reg, err := registry.NewRegistry()
 	if err != nil {

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.xubinbest.com/go-game-server/internal/db/models"
 	"github.xubinbest.com/go-game-server/internal/designconfig"
@@ -12,14 +13,38 @@ import (
 	"go.uber.org/zap"
 )
 
-// getItemTemplate 从内存配置中获取物品模板 (O(1)查询)
+// getItemTemplate 从内存配置中获取物品模板
 func (h *Handler) getItemTemplate(templateID int64) (*designconfig.ItemData, error) {
-	return h.configManager.GetItemByID(templateID)
+	items := h.configManager.GetConfig("item")
+	if items == nil {
+		return nil, fmt.Errorf("item config not found")
+	}
+
+	itemsSlice := reflect.ValueOf(items)
+	for i := 0; i < itemsSlice.Len(); i++ {
+		item := itemsSlice.Index(i).Interface().(designconfig.ItemData)
+		if int64(item.ID) == templateID {
+			return &item, nil
+		}
+	}
+	return nil, fmt.Errorf("item template not found: %d", templateID)
 }
 
-// getEquipmentTemplate 从内存配置中获取装备模板 (O(1)查询)
+// getEquipmentTemplate 从内存配置中获取装备模板
 func (h *Handler) getEquipmentTemplate(templateID int64) (*designconfig.EquipmentData, error) {
-	return h.configManager.GetEquipmentByID(templateID)
+	equipments := h.configManager.GetConfig("equip")
+	if equipments == nil {
+		return nil, fmt.Errorf("equipment config not found")
+	}
+
+	equipmentsSlice := reflect.ValueOf(equipments)
+	for i := 0; i < equipmentsSlice.Len(); i++ {
+		equipment := equipmentsSlice.Index(i).Interface().(designconfig.EquipmentData)
+		if int64(equipment.ID) == templateID {
+			return &equipment, nil
+		}
+	}
+	return nil, fmt.Errorf("equipment template not found: %d", templateID)
 }
 
 // GetInventory 获取背包信息（带缓存）

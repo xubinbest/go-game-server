@@ -75,7 +75,7 @@ func (h *Handler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 		return nil, fmt.Errorf("failed to generate token")
 	}
 
-	if err := h.tokenStore.SetToken(ctx, user.ID, token, time.Until(expiresAt)); err != nil {
+	if err := h.cacheClient.SetToken(ctx, user.ID, token, time.Until(expiresAt)); err != nil {
 		utils.Error("set token err", zap.Error(err))
 		return nil, fmt.Errorf("failed to store token")
 	}

@@ -121,13 +121,6 @@ func (c *GormDatabaseClient) autoMigrate() error {
 
 		// 聊天相关表
 		&ChatMessage{},
-
-		// 用户日志相关表
-		&models.UserCreateLog{},
-		&models.UserLoginLog{},
-		&models.UserLogoutLog{},
-		&models.UserItemLog{},
-		&models.UserMoneyLog{},
 	)
 }
 

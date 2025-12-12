@@ -16,13 +16,16 @@ type UserGRPCServer struct {
 	handler UserHandler
 }
 
-func NewUserGRPCServer(dbClient db.Database, cacheClient cache.Cache, sf *snowflake.Snowflake, cfg *config.Config, configManager *designconfig.DesignConfigManager) *UserGRPCServer {
+func NewUserGRPCServer(dbClient db.Database, cacheClient cache.Cache, sf *snowflake.Snowflake, cfg *config.Config, configManager *designconfig.DesignConfigManager) (*UserGRPCServer, error) {
 	cacheManager := cache.NewCacheManager(cacheClient)
-	handler := NewHandler(dbClient, cacheClient, cacheManager, sf, cfg, configManager)
+	handler, err := NewHandler(dbClient, cacheClient, cacheManager, sf, cfg, configManager)
+	if err != nil {
+		return nil, err
+	}
 	return &UserGRPCServer{
 		UnimplementedUserServiceServer: pb.UnimplementedUserServiceServer{},
 		handler:                        handler,
-	}
+	}, nil
 }
 
 func (s *UserGRPCServer) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {

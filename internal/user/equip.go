@@ -6,9 +6,6 @@ import (
 
 	"github.xubinbest.com/go-game-server/internal/db/models"
 	"github.xubinbest.com/go-game-server/internal/pb"
-	"github.xubinbest.com/go-game-server/internal/utils"
-
-	"go.uber.org/zap"
 )
 
 // GetEquipments 获取用户装备信息（带缓存）
@@ -68,7 +65,7 @@ func (h *Handler) EquipItem(ctx context.Context, req *pb.EquipItemRequest) (*pb.
 	err := h.cacheService.InvalidateUserEquipmentsCache(ctx, userID)
 	if err != nil {
 		// 记录错误但不影响主流程
-		utils.Error("Failed to invalidate equipments cache", zap.Int64("userID", userID), zap.Error(err))
+		fmt.Printf("Failed to invalidate equipments cache: %v", err)
 	}
 
 	return &pb.EquipItemResponse{
@@ -95,7 +92,7 @@ func (h *Handler) UnequipItem(ctx context.Context, req *pb.UnequipItemRequest) (
 	err := h.cacheService.InvalidateUserEquipmentsCache(ctx, userID)
 	if err != nil {
 		// 记录错误但不影响主流程
-		utils.Error("Failed to invalidate equipments cache", zap.Int64("userID", userID), zap.Error(err))
+		fmt.Printf("Failed to invalidate equipments cache: %v", err)
 	}
 
 	return &pb.UnequipItemResponse{

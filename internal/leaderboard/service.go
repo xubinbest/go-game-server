@@ -7,7 +7,6 @@ import (
 	"github.xubinbest.com/go-game-server/internal/cache"
 	"github.xubinbest.com/go-game-server/internal/config"
 	"github.xubinbest.com/go-game-server/internal/mq"
-	"github.xubinbest.com/go-game-server/internal/mq/leaderboard"
 	"github.xubinbest.com/go-game-server/internal/pb"
 	"github.xubinbest.com/go-game-server/internal/utils"
 
@@ -64,9 +63,14 @@ func (s *LeaderboadGRPCService) GetRank(ctx context.Context, req *pb.GetRankRequ
 
 // startScoreConsumer 启动分数消费者
 func startScoreConsumer(consumer *mq.KafkaConsumer, lb *Leaderboard) {
+	type ScoreMessage struct {
+		UserID string  `json:"user_id"`
+		Score  float64 `json:"score"`
+	}
+
 	ctx := context.Background()
 	err := consumer.ConsumeMessages(ctx, func(msg mq.Message) error {
-		var scoreMsg leaderboard.GameScoreMessage
+		var scoreMsg ScoreMessage
 		if err := json.Unmarshal(msg.Value, &scoreMsg); err != nil {
 			utils.Error("Failed to unmarshal score message", zap.Error(err))
 			return err

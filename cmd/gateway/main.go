@@ -18,11 +18,18 @@ import (
 	"github.xubinbest.com/go-game-server/internal/gateway/httpserver"
 	"github.xubinbest.com/go-game-server/internal/gateway/wsserver"
 	"github.xubinbest.com/go-game-server/internal/registry"
+	"github.xubinbest.com/go-game-server/internal/utils"
 )
 
 func main() {
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	// Initialize logger first
+	logger, err := utils.NewLogger()
+	if err != nil {
+		// Fallback to zap default logger if initialization fails
+		logger, _ = zap.NewProduction()
+	}
+	utils.SetLogger(logger)
+	defer utils.Sync()
 
 	ctx := context.Background()
 

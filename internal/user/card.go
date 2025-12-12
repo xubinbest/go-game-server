@@ -2,7 +2,9 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.xubinbest.com/go-game-server/internal/db/models"
 	"github.xubinbest.com/go-game-server/internal/designconfig"
@@ -11,6 +13,57 @@ import (
 
 	"go.uber.org/zap"
 )
+
+// getCardTemplate 从内存配置中获取卡牌模板
+func (h *Handler) getCardTemplate(templateID int64) (*designconfig.CardData, error) {
+	cards := h.configManager.GetConfig("card")
+	if cards == nil {
+		return nil, fmt.Errorf("card config not found")
+	}
+
+	cardsSlice := reflect.ValueOf(cards)
+	for i := 0; i < cardsSlice.Len(); i++ {
+		card := cardsSlice.Index(i).Interface().(designconfig.CardData)
+		if int64(card.ID) == templateID {
+			return &card, nil
+		}
+	}
+	return nil, fmt.Errorf("card template not found: %d", templateID)
+}
+
+// getCardStarTemplate 从内存配置中获取卡牌星级模板
+func (h *Handler) getCardStarTemplate(cardID int64, star int32) (*designconfig.CardStarData, error) {
+	cardStars := h.configManager.GetConfig("card_star")
+	if cardStars == nil {
+		return nil, fmt.Errorf("card star config not found")
+	}
+
+	cardStarsSlice := reflect.ValueOf(cardStars)
+	for i := 0; i < cardStarsSlice.Len(); i++ {
+		cardStar := cardStarsSlice.Index(i).Interface().(designconfig.CardStarData)
+		if int64(cardStar.CardId) == cardID && int32(cardStar.Star) == star {
+			return &cardStar, nil
+		}
+	}
+	return nil, fmt.Errorf("card star template not found: card_id=%d, star=%d", cardID, star)
+}
+
+// getCardLevelTemplate 从内存配置中获取卡牌等级模板
+func (h *Handler) getCardLevelTemplate(cardID int64, level int32) (*designconfig.CardLevelData, error) {
+	cardLevels := h.configManager.GetConfig("card_level")
+	if cardLevels == nil {
+		return nil, fmt.Errorf("card level config not found")
+	}
+
+	cardLevelsSlice := reflect.ValueOf(cardLevels)
+	for i := 0; i < cardLevelsSlice.Len(); i++ {
+		cardLevel := cardLevelsSlice.Index(i).Interface().(designconfig.CardLevelData)
+		if int64(cardLevel.CardId) == cardID && int32(cardLevel.Level) == level {
+			return &cardLevel, nil
+		}
+	}
+	return nil, fmt.Errorf("card level template not found: card_id=%d, level=%d", cardID, level)
+}
 
 // checkAndConsumeItems 检查并消耗物品
 func (h *Handler) checkAndConsumeItems(ctx context.Context, userID int64, costs []designconfig.BaseItemCost) error {
@@ -31,6 +84,55 @@ func (h *Handler) checkAndConsumeItems(ctx context.Context, userID int64, costs 
 		}
 	}
 	return nil
+}
+
+// GetUserCards 获取玩家所有卡牌信息（带缓存）
+func (h *Handler) GetUserCards(ctx context.Context, req *pb.GetUserCardsRequest) (*pb.GetUserCardsResponse, error) {
+	userID := req.UserId
+	if userID == 0 {
+		return nil, fmt.Errorf("invalid user id")
+	}
+
+	// 使用缓存服务获取卡牌数据
+	cards, err := h.cacheService.GetUserCardsWithCache(ctx, userID, func() ([]*models.Card, error) {
+		return h.dbClient.GetUserCards(ctx, userID)
+	})
+	if err != nil {
+		utils.Error("GetUserCards error", zap.Error(err))
+		return nil, fmt.Errorf("failed to get user cards")
+	}
+
+	pbCards := make([]*pb.Card, 0, len(cards))
+	for _, card := range cards {
+		// 从内存配置中获取模板数据
+		template, err := h.getCardTemplate(card.TemplateID)
+		if err != nil {
+			utils.Error("Failed to get card template", zap.Int64("template_id", card.TemplateID), zap.Error(err))
+			continue
+		}
+
+		// 构建卡牌属性JSON
+		properties := map[string]interface{}{
+			"atk":   template.Attribute.Atk,
+			"def":   template.Attribute.Def,
+			"hpMax": template.Attribute.HpMax,
+		}
+		propertiesJSON, _ := json.Marshal(properties)
+
+		pbCards = append(pbCards, &pb.Card{
+			Id:         card.ID,
+			TemplateId: card.TemplateID,
+			Name:       template.Name,
+			Level:      card.Level,
+			Star:       card.Star,
+			Activated:  true, // 有卡牌数据就表示已激活
+			Properties: string(propertiesJSON),
+		})
+	}
+
+	return &pb.GetUserCardsResponse{
+		Cards: pbCards,
+	}, nil
 }
 
 // ActivateCard 激活卡牌
