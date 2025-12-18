@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.xubinbest.com/go-game-server/internal/cache"
+	"github.xubinbest.com/go-game-server/internal/circuitbreaker"
 	"github.xubinbest.com/go-game-server/internal/config"
 	"github.xubinbest.com/go-game-server/internal/gateway/grpcpool"
 	"github.xubinbest.com/go-game-server/internal/gateway/messagerouter"
@@ -18,24 +20,33 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 )
 
 type HTTPServer struct {
-	reg    registry.Registry
-	logger *zap.Logger
-	cfg    *config.Config
-	router *mux.Router
-	server *http.Server
-	Addr   string
+	reg         registry.Registry
+	logger      *zap.Logger
+	cfg         *config.Config
+	router      *mux.Router
+	server      *http.Server
+	Addr        string
+	cacheClient cache.Cache
+	cbManager   *circuitbreaker.Manager
 }
 
-func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config) *HTTPServer {
+func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config, cacheClient cache.Cache) *HTTPServer {
 	s := &HTTPServer{
-		reg:    reg,
-		logger: logger,
-		cfg:    cfg,
-		router: mux.NewRouter(),
-		Addr:   fmt.Sprintf(":%d", port),
+		reg:         reg,
+		logger:      logger,
+		cfg:         cfg,
+		router:      mux.NewRouter(),
+		Addr:        fmt.Sprintf(":%d", port),
+		cacheClient: cacheClient,
+	}
+
+	// 初始化熔断器管理器
+	if cfg.CircuitBreaker.Enabled {
+		s.cbManager = circuitbreaker.NewManager(cfg.CircuitBreaker, logger)
 	}
 
 	s.registerRoutes()
@@ -57,7 +68,16 @@ func (s *HTTPServer) registerRoutes() {
 	// Protected routes (with auth)
 	protectedHandler := s.handleAPIRequest
 	protectedHandler = middleware.NewLoggingMiddleware(s.logger)(protectedHandler)
-	protectedHandler = middleware.NewRateLimitMiddleware(s.cfg.RateLimit)(protectedHandler)
+
+	// 使用分布式限流（如果启用）
+	if s.cfg.DistributedRateLimit.Enabled && s.cacheClient != nil {
+		protectedHandler = middleware.NewDistributedRateLimitMiddleware(
+			s.cacheClient,
+			s.cfg.DistributedRateLimit,
+			s.logger,
+		)(protectedHandler)
+	}
+
 	protectedHandler = middleware.NewAuthMiddleware(s.cfg.Auth)(protectedHandler)
 	s.router.HandleFunc("/api/{service}/{path:.*}", protectedHandler)
 
@@ -124,8 +144,13 @@ func (s *HTTPServer) handleAPIRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	defer pc.Close()
 
-	// Handle message and get response
-	resp, err := messagerouter.HandleMessage(r, pc.ClientConn)
+	// Handle message and get response (with circuit breaker if enabled)
+	var resp proto.Message
+	if s.cbManager != nil {
+		resp, err = messagerouter.HandleMessage(r, pc.ClientConn, s.cbManager)
+	} else {
+		resp, err = messagerouter.HandleMessage(r, pc.ClientConn, nil)
+	}
 	if err != nil {
 		s.logger.Error("Failed to handle message",
 			zap.Error(err))

@@ -96,6 +96,10 @@ func (r *RedisCache) ZAdd(ctx context.Context, key string, members ...redis.Z) *
 	return r.client.ZAdd(ctx, key, members...)
 }
 
+func (r *RedisCache) ZCount(ctx context.Context, key string, min, max float64) *redis.IntCmd {
+	return r.client.ZCount(ctx, key, fmt.Sprintf("%.0f", min), fmt.Sprintf("%.0f", max))
+}
+
 func (r *RedisCache) ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) *redis.ZSliceCmd {
 	return r.client.ZRevRangeWithScores(ctx, key, start, stop)
 }

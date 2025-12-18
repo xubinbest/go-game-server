@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.xubinbest.com/go-game-server/internal/cache"
+	"github.xubinbest.com/go-game-server/internal/circuitbreaker"
 	"github.xubinbest.com/go-game-server/internal/config"
 	"github.xubinbest.com/go-game-server/internal/gateway/grpcpool"
 	"github.xubinbest.com/go-game-server/internal/gateway/messagerouter"
@@ -17,32 +19,43 @@ import (
 	"github.xubinbest.com/go-game-server/internal/registry"
 
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
 type WSServer struct {
-	reg       registry.Registry
-	logger    *zap.Logger
-	cfg       *config.Config
-	upgrader  websocket.Upgrader
-	clients   sync.Map // map[*websocket.Conn]struct{}
-	Addr      string
-	grpcPools sync.Map // map[string]*grpcpool.GRPCPool
+	reg         registry.Registry
+	logger      *zap.Logger
+	cfg         *config.Config
+	upgrader    websocket.Upgrader
+	clients     sync.Map // map[*websocket.Conn]struct{}
+	Addr        string
+	grpcPools   sync.Map // map[string]*grpcpool.GRPCPool
+	cacheClient cache.Cache
+	cbManager   *circuitbreaker.Manager
 }
 
-func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config) *WSServer {
-	return &WSServer{
-		reg:    reg,
-		logger: logger,
-		cfg:    cfg,
-		Addr:   fmt.Sprintf(":%d", port),
+func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config, cacheClient cache.Cache) *WSServer {
+	ws := &WSServer{
+		reg:         reg,
+		logger:      logger,
+		cfg:         cfg,
+		Addr:        fmt.Sprintf(":%d", port),
+		cacheClient: cacheClient,
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 			CheckOrigin:     createOriginChecker(cfg),
 		},
 	}
+
+	// 初始化熔断器管理器
+	if cfg.CircuitBreaker.Enabled {
+		ws.cbManager = circuitbreaker.NewManager(cfg.CircuitBreaker, logger)
+	}
+
+	return ws
 }
 
 // createOriginChecker 创建Origin检查函数
@@ -119,6 +132,19 @@ func (s *WSServer) selectInstance(instances []*registry.ServiceInstance) string 
 }
 
 func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
+	// 分布式限流检查（按IP限流连接数）
+	if s.cfg.DistributedRateLimit.Enabled && s.cacheClient != nil {
+		allowed, _, err := s.checkConnectionRateLimit(r.Context(), r)
+		if err != nil {
+			s.logger.Warn("Rate limit check failed, allowing connection", zap.Error(err))
+		} else if !allowed {
+			s.logger.Warn("WebSocket connection rate limit exceeded",
+				zap.String("remote", r.RemoteAddr))
+			http.Error(w, "Connection rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+	}
+
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.logger.Error("WebSocket upgrade failed", zap.Error(err))
@@ -215,10 +241,20 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 				}
 				defer pc.Close()
 
-				// 处理消息
-				resp, err := messagerouter.HandleWSMessage(r.Context(), msg, pc.ClientConn)
+				// 处理消息（使用熔断器保护）
+				var resp []byte
+				if s.cbManager != nil {
+					resp, err = messagerouter.HandleWSMessage(r.Context(), msg, pc.ClientConn, s.cbManager)
+				} else {
+					resp, err = messagerouter.HandleWSMessage(r.Context(), msg, pc.ClientConn, nil)
+				}
 				if err != nil {
 					s.logger.Error("Failed to handle message", zap.Error(err))
+					// 发送错误响应给客户端
+					errorResp := s.buildErrorMessage(wsMsg.Service, wsMsg.Method, err.Error())
+					if writeErr := conn.WriteMessage(websocket.BinaryMessage, errorResp); writeErr != nil {
+						s.logger.Error("Failed to send error message", zap.Error(writeErr))
+					}
 					continue
 				}
 
@@ -289,4 +325,69 @@ func (s *WSServer) Broadcast(msg []byte) {
 		}
 		return true
 	})
+}
+
+// checkConnectionRateLimit 检查连接限流（按IP限制连接数）
+func (s *WSServer) checkConnectionRateLimit(ctx context.Context, r *http.Request) (bool, int, error) {
+	// 获取客户端IP
+	ip := r.RemoteAddr
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		ip = forwarded
+	}
+	key := fmt.Sprintf("ratelimit:ws:conn:%s", ip)
+
+	// 使用滑动窗口算法检查限流
+	now := time.Now()
+	windowStart := now.Add(-s.cfg.DistributedRateLimit.Window)
+
+	zsetKey := fmt.Sprintf("ratelimit:zset:%s", key)
+	minScore := float64(windowStart.UnixMilli())
+
+	count, err := s.cacheClient.ZCount(ctx, zsetKey, minScore, float64(now.UnixMilli())).Result()
+	if err != nil {
+		s.logger.Warn("Failed to count rate limit", zap.Error(err))
+		return true, s.cfg.DistributedRateLimit.RequestsPerSecond, nil
+	}
+
+	if int(count) >= s.cfg.DistributedRateLimit.RequestsPerSecond {
+		return false, 0, nil
+	}
+
+	member := fmt.Sprintf("%d:%d", now.UnixMilli(), now.Nanosecond())
+	score := float64(now.UnixMilli())
+	if err := s.cacheClient.ZAdd(ctx, zsetKey, redis.Z{
+		Score:  score,
+		Member: member,
+	}).Err(); err != nil {
+		s.logger.Warn("Failed to add rate limit record", zap.Error(err))
+		return true, s.cfg.DistributedRateLimit.RequestsPerSecond, nil
+	}
+
+	if err := s.cacheClient.Expire(ctx, zsetKey, s.cfg.DistributedRateLimit.Window+time.Second); err != nil {
+		s.logger.Warn("Failed to set expire for rate limit key", zap.Error(err))
+	}
+
+	remaining := s.cfg.DistributedRateLimit.RequestsPerSecond - int(count) - 1
+	return true, remaining, nil
+}
+
+// buildErrorMessage 构建错误消息
+func (s *WSServer) buildErrorMessage(service, method, errorMsg string) []byte {
+	errorResp := &pb.WSMessage{
+		Service: service,
+		Method:  method,
+		Payload: []byte(fmt.Sprintf(`{"error":"%s"}`, errorMsg)),
+	}
+
+	respMsgBytes, err := proto.Marshal(errorResp)
+	if err != nil {
+		s.logger.Error("Failed to marshal error message", zap.Error(err))
+		return nil
+	}
+
+	msgLen := uint32(len(respMsgBytes))
+	header := make([]byte, 4)
+	binary.BigEndian.PutUint32(header, msgLen)
+
+	return append(header, respMsgBytes...)
 }

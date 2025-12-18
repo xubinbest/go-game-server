@@ -22,6 +22,7 @@ type Cache interface {
 	Delete(ctx context.Context, key string) error
 	Expire(ctx context.Context, key string, expiration time.Duration) error
 	ZAdd(ctx context.Context, key string, members ...redis.Z) *redis.IntCmd
+	ZCount(ctx context.Context, key string, min, max float64) *redis.IntCmd
 	ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) *redis.ZSliceCmd
 	ZRevRank(ctx context.Context, key, member string) *redis.IntCmd
 	ZScore(ctx context.Context, key, member string) *redis.FloatCmd

@@ -71,15 +71,21 @@ func main() {
 		logger.Fatal("Failed to register service", zap.Error(err))
 	}
 
+	// Initialize Redis cache
+	cacheClient, err := cache.NewRedisCache(cfg)
+	if err != nil {
+		logger.Fatal("Failed to create Redis cache", zap.Error(err))
+	}
+
 	// Initialize servers
-	httpServer := httpserver.New(httpPort, reg, logger, cfg)
-	wsServer := wsserver.New(wsPort, reg, logger, cfg)
+	httpServer := httpserver.New(httpPort, reg, logger, cfg, cacheClient)
+	wsServer := wsserver.New(wsPort, reg, logger, cfg, cacheClient)
 
 	// Setup graceful shutdown
 	setupShutdownHandler(ctx, logger, httpServer, wsServer, reg, instance)
 
-	// Initialize Redis cache and chat message broadcast
-	initChatBroadcast(logger, cfg)
+	// Initialize chat message broadcast
+	initChatBroadcast(logger, cfg, cacheClient)
 
 	// Start servers
 	startServers(logger, httpServer, wsServer, httpPort, wsPort)
@@ -175,13 +181,8 @@ func deregisterService(
 	}
 }
 
-func initChatBroadcast(logger *zap.Logger, cfg *config.Config) {
-	cache, err := cache.NewRedisCache(cfg)
-	if err != nil {
-		logger.Fatal("Failed to create Redis cache", zap.Error(err))
-	}
-
-	chatMessage, err := chatmessage.NewChatMessageBroadcast(cache)
+func initChatBroadcast(logger *zap.Logger, cfg *config.Config, cacheClient cache.Cache) {
+	chatMessage, err := chatmessage.NewChatMessageBroadcast(cacheClient)
 	if err != nil {
 		logger.Fatal("Failed to create chat message broadcast", zap.Error(err))
 	}

@@ -13,15 +13,16 @@ import (
 )
 
 type Config struct {
-	LoadBalancer LoadBalancerConfig `yaml:"loadBalancer"`
-	GRPC         GRPCConfig         `yaml:"grpc"`
-	Redis        RedisConfig        `yaml:"redis"`
-	Database     DatabaseConfig     `yaml:"database"`
-	Auth         AuthConfig         `yaml:"auth"`
-	RateLimit    RateLimitConfig    `yaml:"rateLimit"`
-	WebSocket    WebSocketConfig    `yaml:"websocket"`
-	Kafka        KafkaConfig        `yaml:"kafka"`
-	KafkaConfigs KafkaConfigs       `yaml:"kafka_configs"`
+	LoadBalancer         LoadBalancerConfig         `yaml:"loadBalancer"`
+	GRPC                 GRPCConfig                 `yaml:"grpc"`
+	Redis                RedisConfig                `yaml:"redis"`
+	Database             DatabaseConfig             `yaml:"database"`
+	Auth                 AuthConfig                 `yaml:"auth"`
+	DistributedRateLimit DistributedRateLimitConfig `yaml:"distributedRateLimit"`
+	CircuitBreaker       CircuitBreakerConfig       `yaml:"circuitBreaker"`
+	WebSocket            WebSocketConfig            `yaml:"websocket"`
+	Kafka                KafkaConfig                `yaml:"kafka"`
+	KafkaConfigs         KafkaConfigs               `yaml:"kafka_configs"`
 }
 
 type LoadBalancerConfig struct {
@@ -80,6 +81,23 @@ type AuthConfig struct {
 type RateLimitConfig struct {
 	RequestsPerSecond int `yaml:"requestsPerSecond"`
 	Burst             int `yaml:"burst"`
+}
+
+// DistributedRateLimitConfig 分布式限流配置
+type DistributedRateLimitConfig struct {
+	Enabled           bool          `yaml:"enabled"`           // 是否启用分布式限流
+	RequestsPerSecond int           `yaml:"requestsPerSecond"` // 每秒请求数限制
+	Window            time.Duration `yaml:"window"`            // 时间窗口（默认1秒）
+	KeyPrefix         string        `yaml:"keyPrefix"`         // Redis key前缀
+}
+
+// CircuitBreakerConfig 熔断器配置
+type CircuitBreakerConfig struct {
+	Enabled             bool          `yaml:"enabled"`             // 是否启用熔断器
+	FailureThreshold    int           `yaml:"failureThreshold"`    // 失败阈值
+	SuccessThreshold    int           `yaml:"successThreshold"`    // 成功阈值（半开状态）
+	Timeout             time.Duration `yaml:"timeout"`             // 开启状态超时时间
+	HalfOpenMaxRequests int           `yaml:"halfOpenMaxRequests"` // 半开状态最大请求数
 }
 
 type WebSocketConfig struct {

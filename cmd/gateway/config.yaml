@@ -38,9 +38,20 @@ auth:
     - "/api/user/login"
     - "/api/user/register"
 
-rateLimit:
-  requestsPerSecond: 100
-  burst: 50
+# 分布式限流配置（基于Redis）
+distributedRateLimit:
+  enabled: true              # 是否启用分布式限流（启用后会替代单机限流）
+  requestsPerSecond: 100     # 每秒请求数限制
+  window: 1s                 # 时间窗口（默认1秒）
+  keyPrefix: "ratelimit"     # Redis key前缀
+
+# 熔断器配置
+circuitBreaker:
+  enabled: true              # 是否启用熔断器
+  failureThreshold: 5        # 失败阈值：连续失败5次后开启熔断
+  successThreshold: 2        # 成功阈值：半开状态下成功2次后关闭熔断
+  timeout: 60s               # 开启状态超时时间：60秒后进入半开状态
+  halfOpenMaxRequests: 3     # 半开状态最大请求数：最多允许3个请求通过
 
 websocket:
   checkOrigin: true  # 是否启用Origin检查

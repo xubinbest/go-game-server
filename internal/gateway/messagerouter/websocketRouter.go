@@ -15,8 +15,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// HandleWSMessage 处理WebSocket消息
-func HandleWSMessage(ctx context.Context, msg []byte, conn *grpc.ClientConn) ([]byte, error) {
+// HandleWSMessage 处理WebSocket消息（支持熔断器）
+func HandleWSMessage(ctx context.Context, msg []byte, conn *grpc.ClientConn, cbManager interface{}) ([]byte, error) {
 	// 检查消息长度
 	if len(msg) < 4 {
 		return nil, fmt.Errorf("message too short")
@@ -49,11 +49,28 @@ func HandleWSMessage(ctx context.Context, msg []byte, conn *grpc.ClientConn) ([]
 		return nil, fmt.Errorf("failed to unmarshal protobuf message: %v", err)
 	}
 
-	// 通过gRPC调用相应的服务
-	resp, err := DispatchGRPCRequest(ctx, conn, req)
-	if err != nil {
-		utils.Error("gRPC dispatch failed", zap.Error(err))
-		return nil, err
+	// 通过gRPC调用相应的服务（使用熔断器保护）
+	var resp proto.Message
+	if cbManager != nil {
+		cb := cbManager.(interface {
+			Execute(ctx context.Context, key string, fn func() error) error
+		})
+		err = cb.Execute(ctx, wsMsg.Service, func() error {
+			var dispatchErr error
+			resp, dispatchErr = DispatchGRPCRequest(ctx, conn, req)
+			return dispatchErr
+		})
+		if err != nil {
+			utils.Error("gRPC dispatch failed (with circuit breaker)", zap.Error(err))
+			return nil, err
+		}
+	} else {
+		var dispatchErr error
+		resp, dispatchErr = DispatchGRPCRequest(ctx, conn, req)
+		if dispatchErr != nil {
+			utils.Error("gRPC dispatch failed", zap.Error(dispatchErr))
+			return nil, dispatchErr
+		}
 	}
 
 	// 将protobuf响应序列化为二进制
