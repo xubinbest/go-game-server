@@ -5,6 +5,11 @@ metadata:
   namespace: game-server
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: gateway
@@ -13,6 +18,7 @@ spec:
       labels:
         app: gateway
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: gateway
         image: 192.168.101.2:5000/gateway:v1.0.0

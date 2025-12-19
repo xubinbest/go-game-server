@@ -1,10 +1,21 @@
+# Deployment 模板
+# 使用方法: 复制此文件并替换以下占位符:
+# - {{SERVICE_NAME}} - 服务名称（如: user-service）
+# - {{IMAGE_NAME}} - 镜像名称（如: user:v1.0.0）
+# - {{REPLICAS}} - 副本数（如: 3）
+# - {{GRPC_PORT}} - gRPC端口（如: 50052）
+# - {{CPU_REQUEST}} - CPU请求（如: 250m）
+# - {{CPU_LIMIT}} - CPU限制（如: 500m）
+# - {{MEMORY_REQUEST}} - 内存请求（如: 512Mi）
+# - {{MEMORY_LIMIT}} - 内存限制（如: 1Gi）
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: {{SERVICE_NAME}}
   namespace: game-server
 spec:
-  replicas: 3
+  replicas: {{REPLICAS}}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -12,26 +23,26 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: user-service
+      app: {{SERVICE_NAME}}
   template:
     metadata:
       labels:
-        app: user-service
+        app: {{SERVICE_NAME}}
     spec:
       terminationGracePeriodSeconds: 30
       containers:
-      - name: user-service
-        image: 192.168.101.2:5000/user:v1.0.0
+      - name: {{SERVICE_NAME}}
+        image: 192.168.101.2:5000/{{IMAGE_NAME}}
         imagePullPolicy: Always
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "{{MEMORY_REQUEST}}"
+            cpu: "{{CPU_REQUEST}}"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "{{MEMORY_LIMIT}}"
+            cpu: "{{CPU_LIMIT}}"
         ports:
-        - containerPort: 50052
+        - containerPort: {{GRPC_PORT}}
           name: grpc
         env:
         - name: POD_IP
@@ -43,16 +54,16 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: SERVICE_NAME
-          value: "user-service"
+          value: "{{SERVICE_NAME}}"
         - name: GRPC_PORT
-          value: "50052"
+          value: "{{GRPC_PORT}}"
         - name: CONFIG_LOCATION
           value: "nacos"
         - name: REGISTRY_TYPE
           value: "nacos"
         - name: NACOS_SERVER
           value: "nacos.game-server.svc.cluster.local"
-        - name: "NACOS_PORT"
+        - name: NACOS_PORT
           value: "8848"
         - name: NACOS_NAMESPACE
           value: "dcb54ac9-b24b-4851-95a1-06f18f6a9b57"
@@ -66,7 +77,7 @@ spec:
           exec:
             command:
             - /bin/grpc_health_probe
-            - -addr=:50052
+            - -addr=:{{GRPC_PORT}}
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -75,8 +86,9 @@ spec:
           exec:
             command:
             - /bin/grpc_health_probe
-            - -addr=:50052
+            - -addr=:{{GRPC_PORT}}
           initialDelaySeconds: 15
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
+

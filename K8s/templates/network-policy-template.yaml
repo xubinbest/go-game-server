@@ -1,0 +1,69 @@
+# NetworkPolicy 模板
+# 使用方法: 复制此文件并替换以下占位符:
+# - {{SERVICE_NAME}} - 服务名称（如: user-service）
+# - {{GRPC_PORT}} - gRPC端口（如: 50052）
+# - {{ALLOWED_SOURCES}} - 允许的流量来源（gateway 或其他服务）
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{SERVICE_NAME}}-network-policy
+  namespace: game-server
+spec:
+  podSelector:
+    matchLabels:
+      app: {{SERVICE_NAME}}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 只允许来自Gateway的流量
+  - from:
+    - podSelector:
+        matchLabels:
+          app: gateway
+    ports:
+    - protocol: TCP
+      port: {{GRPC_PORT}}
+  egress:
+  # 允许访问数据库
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 3306  # MySQL
+  # 允许访问Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 6380
+    - protocol: TCP
+      port: 6381
+    - protocol: TCP
+      port: 6382
+    - protocol: TCP
+      port: 6383
+    - protocol: TCP
+      port: 6384
+  # 允许DNS查询
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # 允许访问Nacos
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 8848
+

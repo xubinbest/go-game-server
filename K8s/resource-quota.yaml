@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: game-server-quota
+  namespace: game-server
+spec:
+  hard:
+    # CPU资源限制
+    requests.cpu: "10"      # 请求的CPU总量
+    limits.cpu: "20"        # CPU限制总量
+    
+    # 内存资源限制
+    requests.memory: 20Gi   # 请求的内存总量
+    limits.memory: 40Gi     # 内存限制总量
+    
+    # 对象数量限制
+    pods: "50"              # Pod数量上限
+    services: "20"          # Service数量上限
+    persistentvolumeclaims: "10"  # PVC数量上限
+    
+    # 存储限制
+    requests.storage: 100Gi # 存储请求总量
+    limits.storage: 200Gi   # 存储限制总量
+

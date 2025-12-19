@@ -1,0 +1,55 @@
+# HorizontalPodAutoscaler 模板
+# 使用方法: 复制此文件并替换以下占位符:
+# - {{SERVICE_NAME}} - 服务名称（如: user-service）
+# - {{MIN_REPLICAS}} - 最小副本数（如: 3）
+# - {{MAX_REPLICAS}} - 最大副本数（如: 8）
+# - {{CPU_TARGET}} - CPU目标使用率（如: 70）
+# - {{MEMORY_TARGET}} - 内存目标使用率（如: 80）
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{SERVICE_NAME}}-hpa
+  namespace: game-server
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{SERVICE_NAME}}
+  minReplicas: {{MIN_REPLICAS}}
+  maxReplicas: {{MAX_REPLICAS}}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{CPU_TARGET}}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{MEMORY_TARGET}}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+

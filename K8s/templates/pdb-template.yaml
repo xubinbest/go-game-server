@@ -1,0 +1,16 @@
+# PodDisruptionBudget 模板
+# 使用方法: 复制此文件并替换以下占位符:
+# - {{SERVICE_NAME}} - 服务名称（如: user-service）
+# - {{MIN_AVAILABLE}} - 最少可用Pod数（如: 2，对于3副本的服务）
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{SERVICE_NAME}}-pdb
+  namespace: game-server
+spec:
+  minAvailable: {{MIN_AVAILABLE}}
+  selector:
+    matchLabels:
+      app: {{SERVICE_NAME}}
+

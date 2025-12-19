@@ -20,6 +20,7 @@ spec:
       labels:
         app: test-service
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: test-service
         image: 192.168.101.2:5000/test:v1.0.0
@@ -64,12 +65,20 @@ spec:
             cpu: 500m
             memory: 512Mi
         livenessProbe:
-          tcpSocket:
-            port: grpc
+          exec:
+            command:
+            - /bin/grpc_health_probe
+            - -addr=:50053
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
-          tcpSocket:
-            port: grpc
+          exec:
+            command:
+            - /bin/grpc_health_probe
+            - -addr=:50053
           initialDelaySeconds: 15
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3

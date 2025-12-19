@@ -1,0 +1,73 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: social-service-network-policy
+  namespace: game-server
+spec:
+  podSelector:
+    matchLabels:
+      app: social-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 只允许来自Gateway的流量
+  - from:
+    - podSelector:
+        matchLabels:
+          app: gateway
+    ports:
+    - protocol: TCP
+      port: 50051
+  egress:
+  # 允许访问数据库
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 3306  # MySQL
+    - protocol: TCP
+      port: 27017 # MongoDB
+  # 允许访问Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 6380
+    - protocol: TCP
+      port: 6381
+    - protocol: TCP
+      port: 6382
+    - protocol: TCP
+      port: 6383
+    - protocol: TCP
+      port: 6384
+  # 允许DNS查询
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # 允许访问Nacos
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 8848
+  # 允许访问Kafka（如果使用）
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 9092
+

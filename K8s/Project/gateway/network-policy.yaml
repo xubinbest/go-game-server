@@ -1,0 +1,78 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-network-policy
+  namespace: game-server
+spec:
+  podSelector:
+    matchLabels:
+      app: gateway
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # 允许来自Ingress Controller的流量
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080  # HTTP端口
+    - protocol: TCP
+      port: 8081  # WebSocket端口
+  # 允许来自同一命名空间的流量（用于服务间通信）
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+  egress:
+  # 允许访问所有后端服务
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 50051  # social-service
+    - protocol: TCP
+      port: 50052  # user-service
+    - protocol: TCP
+      port: 50055  # leaderboard-service
+    - protocol: TCP
+      port: 50056  # log-service
+    - protocol: TCP
+      port: 50053  # test-service
+  # 允许DNS查询
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: UDP
+      port: 53
+  # 允许访问Nacos
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 8848
+  # 允许访问Redis
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: game-server
+    ports:
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 6380
+    - protocol: TCP
+      port: 6381
+    - protocol: TCP
+      port: 6382
+    - protocol: TCP
+      port: 6383
+    - protocol: TCP
+      port: 6384
+

@@ -3,11 +3,7 @@ kind: Service
 metadata:
   name: gateway
   namespace: game-server
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
-    nginx.ingress.kubernetes.io/proxy-set-headers: |
-      Connection: upgrade
-      Upgrade: websocket
+  # 注意: WebSocket相关注解应该在Ingress配置中，而不是Service
 spec:
   selector:
     app: gateway

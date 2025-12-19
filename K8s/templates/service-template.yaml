@@ -1,0 +1,19 @@
+# Service 模板
+# 使用方法: 复制此文件并替换以下占位符:
+# - {{SERVICE_NAME}} - 服务名称（如: user-service）
+# - {{GRPC_PORT}} - gRPC端口（如: 50052）
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{SERVICE_NAME}}
+  namespace: game-server
+spec:
+  selector:
+    app: {{SERVICE_NAME}}
+  ports:
+    - name: grpc
+      port: {{GRPC_PORT}}
+      targetPort: {{GRPC_PORT}}
+  type: ClusterIP
+

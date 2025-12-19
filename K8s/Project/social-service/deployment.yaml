@@ -5,6 +5,11 @@ metadata:
   namespace: game-server
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: social-service
@@ -13,6 +18,7 @@ spec:
       labels:
         app: social-service
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: social-service
         image: 192.168.101.2:5000/social:v1.0.0
@@ -57,12 +63,20 @@ spec:
         - name: APP_ENV
           value: "production"
         livenessProbe:
-          tcpSocket:
-            port: grpc
+          exec:
+            command:
+            - /bin/grpc_health_probe
+            - -addr=:50051
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
-          tcpSocket:
-            port: grpc
+          exec:
+            command:
+            - /bin/grpc_health_probe
+            - -addr=:50051
           initialDelaySeconds: 15
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3

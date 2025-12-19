@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: leaderboard-service-pdb
+  namespace: game-server
+spec:
+  minAvailable: 2  # 至少保持2个Pod可用（共3个副本）
+  selector:
+    matchLabels:
+      app: leaderboard-service
+
