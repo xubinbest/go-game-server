@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.xubinbest.com/go-game-server/internal/cache"
 	"github.xubinbest.com/go-game-server/internal/circuitbreaker"
 	"github.xubinbest.com/go-game-server/internal/config"
@@ -17,6 +19,7 @@ import (
 	"github.xubinbest.com/go-game-server/internal/gateway/messagerouter"
 	"github.xubinbest.com/go-game-server/internal/middleware"
 	"github.xubinbest.com/go-game-server/internal/registry"
+	"github.xubinbest.com/go-game-server/internal/telemetry"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -44,6 +47,13 @@ func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config
 		cacheClient: cacheClient,
 	}
 
+	// 初始化OpenTelemetry
+	if cfg.Telemetry.Enabled {
+		if err := telemetry.InitTracer(&cfg.Telemetry, logger); err != nil {
+			logger.Error("Failed to initialize OpenTelemetry tracer", zap.Error(err))
+		}
+	}
+
 	// 初始化熔断器管理器
 	if cfg.CircuitBreaker.Enabled {
 		s.cbManager = circuitbreaker.NewManager(cfg.CircuitBreaker, logger)
@@ -64,6 +74,9 @@ func (s *HTTPServer) registerRoutes() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	}).Methods("GET")
+
+	// Metrics endpoint for Prometheus
+	s.router.Handle("/metrics", promhttp.Handler()).Methods("GET")
 
 	// Protected routes (with auth)
 	protectedHandler := s.handleAPIRequest
@@ -194,6 +207,15 @@ func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	if s.server != nil {
 		if shutdownErr := s.server.Shutdown(ctx); shutdownErr != nil {
 			err = shutdownErr
+		}
+	}
+
+	// 关闭OpenTelemetry tracer
+	if s.cfg.Telemetry.Enabled {
+		if shutdownErr := telemetry.Shutdown(ctx); shutdownErr != nil {
+			if err == nil {
+				err = shutdownErr
+			}
 		}
 	}
 

@@ -7,7 +7,13 @@ data:
   prometheus.yml: |-
     global:
       scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'game-server'
+        environment: 'production'
+    
     scrape_configs:
+      # Kubernetes Pod自动发现
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
           - role: pod
@@ -15,4 +21,75 @@ data:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: true
-      # 可以根据需要添加更多的监控配置
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: (.+)
+            replacement: ${1}
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+      
+      # Game Services专用配置
+      - job_name: 'game-services'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - {{ .Values.global.namespace }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: (.+)
+            replacement: ${1}
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            default: /metrics
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            action: replace
+            target_label: container
+      
+      # Prometheus自身监控
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      
+      # Jaeger监控（如果启用）
+      {{- if .Values.jaeger.enabled }}
+      - job_name: 'jaeger'
+        static_configs:
+          - targets: ['jaeger.{{ .Values.global.namespace }}.svc.cluster.local:14269']
+      {{- end }}

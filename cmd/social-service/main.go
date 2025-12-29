@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.xubinbest.com/go-game-server/internal/registry"
 	"github.xubinbest.com/go-game-server/internal/snowflake"
 	"github.xubinbest.com/go-game-server/internal/social"
+	"github.xubinbest.com/go-game-server/internal/telemetry"
 	"github.xubinbest.com/go-game-server/internal/utils"
 
 	"go.uber.org/zap"
@@ -83,8 +85,30 @@ func main() {
 	// Initialize design config manager
 	configManager := designconfig.NewDesignConfigManager(reg, social.Tables)
 
-	// Create gRPC server with increased message size limit
-	grpcServer := grpc.NewServer()
+	// 初始化OpenTelemetry
+	var metricsServer *http.Server
+	if cfg.Telemetry.Enabled {
+		if err := telemetry.InitTracer(&cfg.Telemetry, logger); err != nil {
+			logger.Error("Failed to initialize OpenTelemetry tracer", zap.Error(err))
+		}
+		metricsPort := 9090
+		if metricsPortStr := os.Getenv("METRICS_PORT"); metricsPortStr != "" {
+			if p, err := strconv.Atoi(metricsPortStr); err == nil {
+				metricsPort = p
+			}
+		}
+		metricsServer = telemetry.StartMetricsServer(metricsPort, logger)
+	}
+
+	// Create gRPC server with interceptors
+	var opts []grpc.ServerOption
+	if cfg.Telemetry.Enabled {
+		opts = append(opts,
+			grpc.UnaryInterceptor(telemetry.ServerTracingAndMetricsInterceptor()),
+			grpc.StreamInterceptor(telemetry.StreamServerTracingInterceptor()),
+		)
+	}
+	grpcServer := grpc.NewServer(opts...)
 
 	// kubernetes health check
 	healthServer := health.NewServer()
@@ -129,7 +153,7 @@ func main() {
 	}
 
 	// Setup graceful shutdown
-	setupShutdownHandler(grpcServer, reg, instance, port, lis)
+	setupShutdownHandler(grpcServer, reg, instance, port, lis, metricsServer, cfg, logger)
 
 	utils.Info("Server exited properly")
 }
@@ -158,6 +182,9 @@ func setupShutdownHandler(
 	instance *registry.ServiceInstance,
 	port int,
 	lis net.Listener,
+	metricsServer *http.Server,
+	cfg *config.Config,
+	logger *zap.Logger,
 ) {
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -173,7 +200,25 @@ func setupShutdownHandler(
 	<-quit
 	utils.Info("Shutting down server...")
 
+	// 关闭metrics服务器
+	if metricsServer != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := telemetry.ShutdownMetricsServer(shutdownCtx, metricsServer, logger); err != nil {
+			logger.Error("Failed to shutdown metrics server", zap.Error(err))
+		}
+	}
+
 	grpcServer.GracefulStop()
+
+	// 关闭OpenTelemetry tracer
+	if cfg.Telemetry.Enabled {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := telemetry.Shutdown(shutdownCtx); err != nil {
+			logger.Error("Failed to shutdown tracer", zap.Error(err))
+		}
+	}
 
 	// Deregister service
 	if err := reg.Deregister(context.Background(), instance); err != nil {

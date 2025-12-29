@@ -465,24 +465,47 @@ mysql -u root -p < sql/log_db.sql
 
 - **指标收集**：Prometheus收集服务指标
 - **可视化**：Grafana展示监控数据
+- **全链路追踪**：OpenTelemetry + Jaeger实现分布式追踪
 - **健康检查**：gRPC Health Check协议
 - **性能监控**：
   - 请求响应时间
   - 请求QPS
   - 错误率
   - 资源使用率（CPU、内存）
+  - 缓存命中率
+  - 数据库查询性能
+
+### 可观测性
+
+- **分布式追踪**：使用OpenTelemetry和Jaeger实现全链路追踪
+  - HTTP请求追踪
+  - WebSocket消息追踪
+  - gRPC调用追踪
+  - 数据库操作追踪
+- **Metrics暴露**：所有服务暴露Prometheus metrics端点（`/metrics`）
+- **日志关联**：日志自动包含trace ID和span ID，便于关联追踪和日志
 
 ### 告警机制
 
 - **服务异常告警**：服务宕机、健康检查失败
 - **性能指标告警**：响应时间过长、QPS异常
 - **资源使用告警**：CPU、内存使用率过高
+- **错误率告警**：HTTP/gRPC错误率超过阈值
+- **缓存告警**：缓存命中率过低
 
 ### 监控配置
 
 监控组件部署配置位于：
 - **Helm Chart**: [K8s/Helm/game-monitoring/](K8s/Helm/game-monitoring/)
 - **YAML配置**: [K8s/Yaml/prometheus/](K8s/Yaml/prometheus/) 和 [K8s/Yaml/grafana/](K8s/Yaml/grafana/)
+
+### 访问监控系统
+
+- **Prometheus**: `http://prometheus.game-server.svc.cluster.local:9090`
+- **Grafana**: `http://grafana.example.com` (通过Ingress访问)
+- **Jaeger UI**: `http://jaeger.game-server.svc.cluster.local:16686`
+
+详细的可观测性配置和使用指南请参考：[docs/TELEMETRY_GUIDE.md](docs/TELEMETRY_GUIDE.md)
 
 ## ❓ 常见问题
 

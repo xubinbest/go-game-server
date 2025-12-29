@@ -1,44 +1,47 @@
 package cache
 
 import (
-	"sync/atomic"
+	"github.xubinbest.com/go-game-server/internal/telemetry"
 )
 
-// CacheMetrics 缓存统计
+// CacheMetrics 缓存统计（使用Prometheus metrics）
 type CacheMetrics struct {
-	hits   int64
-	misses int64
-	errors int64
+	cacheType string
 }
 
-func NewCacheMetrics() *CacheMetrics {
-	return &CacheMetrics{}
+func NewCacheMetrics(cacheType string) *CacheMetrics {
+	return &CacheMetrics{
+		cacheType: cacheType,
+	}
 }
 
 func (cm *CacheMetrics) IncrementHits() {
-	atomic.AddInt64(&cm.hits, 1)
+	telemetry.CacheHitsTotal.WithLabelValues(cm.cacheType).Inc()
+	cm.updateHitRate()
 }
 
 func (cm *CacheMetrics) IncrementMisses() {
-	atomic.AddInt64(&cm.misses, 1)
+	telemetry.CacheMissesTotal.WithLabelValues(cm.cacheType).Inc()
+	cm.updateHitRate()
 }
 
 func (cm *CacheMetrics) IncrementErrors() {
-	atomic.AddInt64(&cm.errors, 1)
+	telemetry.CacheErrorsTotal.WithLabelValues(cm.cacheType).Inc()
+}
+
+func (cm *CacheMetrics) updateHitRate() {
+	// 命中率应该通过Prometheus查询计算
+	// 在Grafana中使用: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
+	// 这里不需要手动计算，Prometheus会自动处理
 }
 
 func (cm *CacheMetrics) HitRate() float64 {
-	total := atomic.LoadInt64(&cm.hits) + atomic.LoadInt64(&cm.misses)
-	if total == 0 {
-		return 0
-	}
-	return float64(atomic.LoadInt64(&cm.hits)) / float64(total)
+	// 命中率应该通过Prometheus查询计算，这里返回0作为占位符
+	// 实际命中率应该在Grafana中使用 rate(cache_hits_total) / (rate(cache_hits_total) + rate(cache_misses_total))
+	return 0
 }
 
 func (cm *CacheMetrics) GetStats() map[string]int64 {
-	return map[string]int64{
-		"hits":   atomic.LoadInt64(&cm.hits),
-		"misses": atomic.LoadInt64(&cm.misses),
-		"errors": atomic.LoadInt64(&cm.errors),
-	}
+	// 返回空map，实际统计应该从Prometheus查询
+	return map[string]int64{}
 }

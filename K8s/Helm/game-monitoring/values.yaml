@@ -80,3 +80,47 @@ grafana:
     # 如果您想在子路径下提供Grafana，取消下面两行的注释并修改URL
     # GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
     # GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+
+# Jaeger配置
+jaeger:
+  enabled: true
+  image:
+    repository: jaegertracing/all-in-one
+    tag: 1.55
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+  # Jaeger存储配置
+  storage:
+    type: memory  # memory, elasticsearch, cassandra
+    # 如果使用elasticsearch或cassandra，需要配置以下参数
+    # elasticsearch:
+    #   serverUrls: http://elasticsearch:9200
+    # cassandra:
+    #   servers: cassandra:9042
+  # Jaeger服务配置
+  service:
+    type: ClusterIP
+    collector:
+      port: 14268  # HTTP collector端口
+    query:
+      port: 16686  # Query UI端口
+    agent:
+      port: 6831   # UDP agent端口
+  # Jaeger Ingress配置
+  ingress:
+    enabled: false
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - host: jaeger.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []

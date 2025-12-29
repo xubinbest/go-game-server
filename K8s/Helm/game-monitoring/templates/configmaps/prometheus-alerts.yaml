@@ -1,0 +1,113 @@
+{{- if .Values.prometheus.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alerts
+  namespace: {{ .Values.global.namespace }}
+data:
+  alerts.yml: |-
+    groups:
+      - name: game-services
+        interval: 30s
+        rules:
+          # 服务不可用告警
+          - alert: ServiceDown
+            expr: up{job="game-services"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "服务 {{ $labels.pod }} 不可用"
+              description: "服务 {{ $labels.pod }} 已经不可用超过1分钟"
+
+          # 高错误率告警
+          - alert: HighErrorRate
+            expr: |
+              sum(rate(http_requests_total{status=~"5.."}[5m])) by (pod, service)
+              /
+              sum(rate(http_requests_total[5m])) by (pod, service)
+              > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "服务 {{ $labels.pod }} 错误率过高"
+              description: "服务 {{ $labels.pod }} 错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+
+          # gRPC高错误率告警
+          - alert: HighGRPCErrorRate
+            expr: |
+              sum(rate(grpc_server_requests_total{status!="OK"}[5m])) by (pod, service)
+              /
+              sum(rate(grpc_server_requests_total[5m])) by (pod, service)
+              > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "gRPC服务 {{ $labels.pod }} 错误率过高"
+              description: "gRPC服务 {{ $labels.pod }} 错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+
+          # 高延迟告警（P99 > 1s）
+          - alert: HighLatency
+            expr: |
+              histogram_quantile(0.99, 
+                sum(rate(http_request_duration_seconds_bucket[5m])) by (le, pod, service)
+              ) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "服务 {{ $labels.pod }} 延迟过高"
+              description: "服务 {{ $labels.pod }} P99延迟超过1秒，当前值: {{ $value }}s"
+
+          # gRPC高延迟告警
+          - alert: HighGRPCLatency
+            expr: |
+              histogram_quantile(0.99,
+                sum(rate(grpc_server_request_duration_seconds_bucket[5m])) by (le, pod, service)
+              ) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "gRPC服务 {{ $labels.pod }} 延迟过高"
+              description: "gRPC服务 {{ $labels.pod }} P99延迟超过1秒，当前值: {{ $value }}s"
+
+          # 缓存命中率低告警
+          - alert: LowCacheHitRate
+            expr: |
+              rate(cache_hits_total[5m])
+              /
+              (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
+              < 0.8
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "缓存命中率过低"
+              description: "缓存命中率低于80%，当前值: {{ $value | humanizePercentage }}"
+
+          # WebSocket连接数异常
+          - alert: WebSocketConnectionAnomaly
+            expr: |
+              websocket_connections{status="active"} > 10000
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "WebSocket连接数异常"
+              description: "WebSocket连接数超过10000，当前值: {{ $value }}"
+
+          # 请求QPS异常
+          - alert: HighRequestRate
+            expr: |
+              sum(rate(http_requests_total[5m])) by (pod, service) > 1000
+            for: 5m
+            labels:
+              severity: info
+            annotations:
+              summary: "服务 {{ $labels.pod }} 请求QPS异常"
+              description: "服务 {{ $labels.pod }} 请求QPS超过1000，当前值: {{ $value }}"
+{{- end }}
+

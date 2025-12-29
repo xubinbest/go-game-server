@@ -1,0 +1,39 @@
+{{- if .Values.jaeger.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: http-collector
+    port: {{ .Values.jaeger.service.collector.port }}
+    targetPort: 14268
+    protocol: TCP
+  - name: query
+    port: {{ .Values.jaeger.service.query.port }}
+    targetPort: 16686
+    protocol: TCP
+  - name: otlp-grpc
+    port: 4317
+    targetPort: 4317
+    protocol: TCP
+  - name: otlp-http
+    port: 4318
+    targetPort: 4318
+    protocol: TCP
+  - name: agent-udp
+    port: {{ .Values.jaeger.service.agent.port }}
+    targetPort: 6831
+    protocol: UDP
+  - name: agent-udp-thrift
+    port: 6832
+    targetPort: 6832
+    protocol: UDP
+  type: {{ .Values.jaeger.service.type }}
+{{- end }}
+

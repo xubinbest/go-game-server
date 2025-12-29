@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"context"
+
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -89,4 +92,38 @@ func WithField(key string, value interface{}) *zap.Logger {
 // WithFields 添加多个字段
 func WithFields(fields ...zap.Field) *zap.Logger {
 	return GetLogger().With(fields...)
+}
+
+// WithTraceContext 从context中提取trace信息并添加到logger
+func WithTraceContext(ctx context.Context) *zap.Logger {
+	span := trace.SpanFromContext(ctx)
+	if !span.SpanContext().IsValid() {
+		return GetLogger()
+	}
+
+	spanCtx := span.SpanContext()
+	return GetLogger().With(
+		zap.String("trace_id", spanCtx.TraceID().String()),
+		zap.String("span_id", spanCtx.SpanID().String()),
+	)
+}
+
+// InfoWithContext 输出信息日志（带trace context）
+func InfoWithContext(ctx context.Context, msg string, fields ...zap.Field) {
+	WithTraceContext(ctx).Info(msg, fields...)
+}
+
+// ErrorWithContext 输出错误日志（带trace context）
+func ErrorWithContext(ctx context.Context, msg string, fields ...zap.Field) {
+	WithTraceContext(ctx).Error(msg, fields...)
+}
+
+// WarnWithContext 输出警告日志（带trace context）
+func WarnWithContext(ctx context.Context, msg string, fields ...zap.Field) {
+	WithTraceContext(ctx).Warn(msg, fields...)
+}
+
+// DebugWithContext 输出调试日志（带trace context）
+func DebugWithContext(ctx context.Context, msg string, fields ...zap.Field) {
+	WithTraceContext(ctx).Debug(msg, fields...)
 }

@@ -17,9 +17,15 @@ import (
 	"github.xubinbest.com/go-game-server/internal/gateway/messagerouter"
 	"github.xubinbest.com/go-game-server/internal/pb"
 	"github.xubinbest.com/go-game-server/internal/registry"
+	"github.xubinbest.com/go-game-server/internal/telemetry"
 
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -48,6 +54,13 @@ func New(port int, reg registry.Registry, logger *zap.Logger, cfg *config.Config
 			WriteBufferSize: 1024,
 			CheckOrigin:     createOriginChecker(cfg),
 		},
+	}
+
+	// 初始化OpenTelemetry（如果尚未初始化）
+	if cfg.Telemetry.Enabled {
+		if err := telemetry.InitTracer(&cfg.Telemetry, logger); err != nil {
+			logger.Error("Failed to initialize OpenTelemetry tracer", zap.Error(err))
+		}
 	}
 
 	// 初始化熔断器管理器
@@ -132,14 +145,33 @@ func (s *WSServer) selectInstance(instances []*registry.ServiceInstance) string 
 }
 
 func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
+	// 提取trace context
+	ctx := otel.GetTextMapPropagator().Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+
+	// 创建WebSocket连接span
+	var span trace.Span
+	if s.cfg.Telemetry.Enabled {
+		tracer := otel.Tracer("gateway")
+		ctx, span = tracer.Start(ctx, "websocket.connect",
+			trace.WithAttributes(
+				attribute.String("websocket.remote_addr", r.RemoteAddr),
+				attribute.String("http.host", r.Host),
+			),
+		)
+		defer span.End()
+	}
+
 	// 分布式限流检查（按IP限流连接数）
 	if s.cfg.DistributedRateLimit.Enabled && s.cacheClient != nil {
-		allowed, _, err := s.checkConnectionRateLimit(r.Context(), r)
+		allowed, _, err := s.checkConnectionRateLimit(ctx, r)
 		if err != nil {
 			s.logger.Warn("Rate limit check failed, allowing connection", zap.Error(err))
 		} else if !allowed {
 			s.logger.Warn("WebSocket connection rate limit exceeded",
 				zap.String("remote", r.RemoteAddr))
+			if span != nil {
+				span.SetStatus(codes.Error, "Rate limit exceeded")
+			}
 			http.Error(w, "Connection rate limit exceeded", http.StatusTooManyRequests)
 			return
 		}
@@ -148,12 +180,25 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.logger.Error("WebSocket upgrade failed", zap.Error(err))
+		if span != nil {
+			span.SetStatus(codes.Error, "Upgrade failed")
+			span.RecordError(err)
+		}
 		return
 	}
 	defer conn.Close()
 
 	s.clients.Store(conn, struct{}{})
 	defer s.clients.Delete(conn)
+
+	// 更新连接数metrics
+	telemetry.WebSocketConnections.WithLabelValues("active").Inc()
+	defer telemetry.WebSocketConnections.WithLabelValues("active").Dec()
+
+	if span != nil {
+		span.SetAttributes(attribute.String("websocket.status", "connected"))
+		span.SetStatus(codes.Ok, "")
+	}
 
 	// Message processing loop
 	msgChan := make(chan []byte, 100)
@@ -198,6 +243,20 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case msg := <-msgChan:
+				// 创建消息处理span
+				msgCtx := ctx
+				var msgSpan trace.Span
+				if s.cfg.Telemetry.Enabled {
+					tracer := otel.Tracer("gateway")
+					msgCtx, msgSpan = tracer.Start(ctx, "websocket.message",
+						trace.WithAttributes(
+							attribute.Int("websocket.message_size", len(msg)),
+						),
+					)
+				}
+
+				telemetry.WebSocketMessagesTotal.WithLabelValues("received").Inc()
+
 				s.logger.Debug("WebSocket message received",
 					zap.ByteString("msg", msg),
 					zap.String("remote", conn.RemoteAddr().String()))
@@ -206,21 +265,42 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 				var wsMsg pb.WSMessage
 				if err := proto.Unmarshal(msg[4:], &wsMsg); err != nil {
 					s.logger.Error("Failed to unmarshal message", zap.Error(err))
+					if msgSpan != nil {
+						msgSpan.SetStatus(codes.Error, "Unmarshal failed")
+						msgSpan.RecordError(err)
+						msgSpan.End()
+					}
 					continue
 				}
 
+				if msgSpan != nil {
+					msgSpan.SetAttributes(
+						attribute.String("websocket.service", wsMsg.Service),
+						attribute.String("websocket.method", wsMsg.Method),
+					)
+				}
+
 				// 服务发现
-				instances, err := s.reg.Discover(r.Context(), wsMsg.Service)
+				instances, err := s.reg.Discover(msgCtx, wsMsg.Service)
 				if err != nil {
 					s.logger.Error("Service discovery failed",
 						zap.String("service", wsMsg.Service),
 						zap.Error(err))
+					if msgSpan != nil {
+						msgSpan.SetStatus(codes.Error, "Service discovery failed")
+						msgSpan.RecordError(err)
+						msgSpan.End()
+					}
 					continue
 				}
 
 				if len(instances) == 0 {
 					s.logger.Error("No available instances",
 						zap.String("service", wsMsg.Service))
+					if msgSpan != nil {
+						msgSpan.SetStatus(codes.Error, "No available instances")
+						msgSpan.End()
+					}
 					continue
 				}
 
@@ -237,6 +317,11 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 					s.logger.Error("Failed to get gRPC connection",
 						zap.String("service", wsMsg.Service),
 						zap.Error(err))
+					if msgSpan != nil {
+						msgSpan.SetStatus(codes.Error, "gRPC connection failed")
+						msgSpan.RecordError(err)
+						msgSpan.End()
+					}
 					continue
 				}
 				defer pc.Close()
@@ -244,16 +329,23 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 				// 处理消息（使用熔断器保护）
 				var resp []byte
 				if s.cbManager != nil {
-					resp, err = messagerouter.HandleWSMessage(r.Context(), msg, pc.ClientConn, s.cbManager)
+					resp, err = messagerouter.HandleWSMessage(msgCtx, msg, pc.ClientConn, s.cbManager)
 				} else {
-					resp, err = messagerouter.HandleWSMessage(r.Context(), msg, pc.ClientConn, nil)
+					resp, err = messagerouter.HandleWSMessage(msgCtx, msg, pc.ClientConn, nil)
 				}
 				if err != nil {
 					s.logger.Error("Failed to handle message", zap.Error(err))
+					if msgSpan != nil {
+						msgSpan.SetStatus(codes.Error, "Message handling failed")
+						msgSpan.RecordError(err)
+					}
 					// 发送错误响应给客户端
 					errorResp := s.buildErrorMessage(wsMsg.Service, wsMsg.Method, err.Error())
 					if writeErr := conn.WriteMessage(websocket.BinaryMessage, errorResp); writeErr != nil {
 						s.logger.Error("Failed to send error message", zap.Error(writeErr))
+					}
+					if msgSpan != nil {
+						msgSpan.End()
 					}
 					continue
 				}
@@ -261,8 +353,20 @@ func (s *WSServer) HandleWS(w http.ResponseWriter, r *http.Request) {
 				// 发送响应
 				if err := conn.WriteMessage(websocket.BinaryMessage, resp); err != nil {
 					s.logger.Error("Failed to send WebSocket message", zap.Error(err))
+					if msgSpan != nil {
+						msgSpan.SetStatus(codes.Error, "Send message failed")
+						msgSpan.RecordError(err)
+						msgSpan.End()
+					}
 					close(done)
 					return
+				}
+
+				telemetry.WebSocketMessagesTotal.WithLabelValues("sent").Inc()
+				if msgSpan != nil {
+					msgSpan.SetAttributes(attribute.Int("websocket.response_size", len(resp)))
+					msgSpan.SetStatus(codes.Ok, "")
+					msgSpan.End()
 				}
 
 			case <-ticker.C:
@@ -315,6 +419,16 @@ func (s *WSServer) Shutdown(ctx context.Context) error {
 		}
 		return true
 	})
+
+	// 关闭OpenTelemetry tracer
+	if s.cfg.Telemetry.Enabled {
+		if shutdownErr := telemetry.Shutdown(ctx); shutdownErr != nil {
+			if err == nil {
+				err = shutdownErr
+			}
+		}
+	}
+
 	return err
 }
 

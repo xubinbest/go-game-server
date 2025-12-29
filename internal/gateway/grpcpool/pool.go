@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.xubinbest.com/go-game-server/internal/config"
+	"github.xubinbest.com/go-game-server/internal/telemetry"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -107,7 +108,8 @@ func (p *GRPCPool) GetConn(addr string, cfg *config.Config) (*pooledConn, error)
 		}
 	}
 
-	conn, err := grpc.NewClient(addr,
+	// 构建gRPC客户端选项
+	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:    cfg.GRPC.KeepAlive,
@@ -117,7 +119,18 @@ func (p *GRPCPool) GetConn(addr string, cfg *config.Config) (*pooledConn, error)
 			grpc.MaxCallRecvMsgSize(cfg.GRPC.MaxRecvMsgSize),
 			grpc.MaxCallSendMsgSize(cfg.GRPC.MaxSendMsgSize),
 		),
-	)
+	}
+
+	// 如果启用了Telemetry，添加StatsHandler和客户端拦截器
+	if cfg.Telemetry.Enabled {
+		opts = append(opts,
+			grpc.WithStatsHandler(telemetry.NewClientStatsHandler()),
+			grpc.WithUnaryInterceptor(telemetry.ClientTracingAndMetricsInterceptor()),
+			grpc.WithStreamInterceptor(telemetry.StreamClientTracingInterceptor()),
+		)
+	}
+
+	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, err
 	}

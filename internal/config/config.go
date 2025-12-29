@@ -23,6 +23,7 @@ type Config struct {
 	WebSocket            WebSocketConfig            `yaml:"websocket"`
 	Kafka                KafkaConfig                `yaml:"kafka"`
 	KafkaConfigs         KafkaConfigs               `yaml:"kafka_configs"`
+	Telemetry            TelemetryConfig            `yaml:"telemetry"`
 }
 
 type LoadBalancerConfig struct {
@@ -120,6 +121,25 @@ type KafkaConfigs struct {
 	UserBehavior KafkaConfig `yaml:"user_behavior"`
 	// 系统通知配置（示例）
 	Notification KafkaConfig `yaml:"notification"`
+}
+
+// TelemetryConfig 可观测性配置
+type TelemetryConfig struct {
+	Enabled     bool           `yaml:"enabled"`     // 是否启用追踪
+	ServiceName string         `yaml:"serviceName"` // 服务名称
+	OTLP        OTLPConfig     `yaml:"otlp"`        // OTLP配置（Jaeger支持OTLP协议）
+	Sampling    SamplingConfig `yaml:"sampling"`
+}
+
+// OTLPConfig OTLP配置（用于Jaeger或其他OTLP兼容的后端）
+type OTLPConfig struct {
+	Endpoint string `yaml:"endpoint"` // OTLP端点，如: jaeger.game-server.svc.cluster.local:4318 (HTTP) 或 :4317 (gRPC)
+}
+
+// SamplingConfig 采样配置
+type SamplingConfig struct {
+	Type  string  `yaml:"type"`  // 采样类型: always_on, always_off, traceidratio
+	Ratio float64 `yaml:"ratio"` // 采样率 (0.0-1.0)，仅用于traceidratio类型
 }
 
 func LoadConfig(path string) *Config {

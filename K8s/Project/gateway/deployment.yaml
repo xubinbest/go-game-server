@@ -17,6 +17,10 @@ spec:
     metadata:
       labels:
         app: gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
     spec:
       terminationGracePeriodSeconds: 30
       containers:
@@ -35,6 +39,8 @@ spec:
           name: http
         - containerPort: 8081  # WebSocket 端口
           name: websocket
+        - containerPort: 9090  # Metrics 端口
+          name: metrics
         env:
         - name: POD_IP
           valueFrom:

@@ -1,0 +1,66 @@
+{{- if .Values.jaeger.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: {{ .Values.jaeger.replicaCount }}
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: {{ .Values.jaeger.image.repository }}:{{ .Values.jaeger.image.tag }}
+        imagePullPolicy: {{ .Values.jaeger.image.pullPolicy }}
+        args:
+        - --memory.max-traces=50000
+        {{- if eq .Values.jaeger.storage.type "elasticsearch" }}
+        - --storage.type=elasticsearch
+        - --storage.elasticsearch.server-urls={{ .Values.jaeger.storage.elasticsearch.serverUrls }}
+        {{- else if eq .Values.jaeger.storage.type "cassandra" }}
+        - --storage.type=cassandra
+        - --storage.cassandra.servers={{ .Values.jaeger.storage.cassandra.servers }}
+        {{- else }}
+        - --storage.type=memory
+        {{- end }}
+        - --collector.otlp.enabled=true
+        ports:
+        - containerPort: 14268
+          name: http-collector
+        - containerPort: 16686
+          name: query
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        - containerPort: 6831
+          name: agent-udp
+          protocol: UDP
+        - containerPort: 6832
+          name: agent-udp-thrift
+          protocol: UDP
+        env:
+        - name: SPAN_STORAGE_TYPE
+          value: {{ .Values.jaeger.storage.type }}
+        resources:
+          {{- toYaml .Values.jaeger.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 14269
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 14269
+          initialDelaySeconds: 1
+          periodSeconds: 5
+{{- end }}
+

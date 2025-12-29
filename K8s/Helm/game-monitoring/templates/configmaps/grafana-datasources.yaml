@@ -1,0 +1,40 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: grafana
+data:
+  datasources.yaml: |-
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.{{ .Values.global.namespace }}.svc.cluster.local:{{ .Values.prometheus.service.port }}
+        isDefault: true
+        editable: true
+        jsonData:
+          timeInterval: "15s"
+          httpMethod: POST
+      {{- if .Values.jaeger.enabled }}
+      - name: Jaeger
+        type: jaeger
+        access: proxy
+        url: http://jaeger.{{ .Values.global.namespace }}.svc.cluster.local:{{ .Values.jaeger.service.query.port }}
+        editable: true
+        jsonData:
+          tracesToLogs:
+            datasourceUid: loki
+            tags: ['job', 'instance', 'pod', 'namespace']
+            mappedTags: [{ key: 'service.name', value: 'service' }]
+            mapTagNamesEnabled: false
+            spanStartTimeShift: '1h'
+            spanEndTimeShift: '1h'
+            filterByTraceID: false
+            filterBySpanID: false
+      {{- end }}
+{{- end }}
+
