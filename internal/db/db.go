@@ -45,6 +45,7 @@ type Database interface {
 }
 
 // DatabaseClient 实现 Database 接口，使用组合模式
+// 通过嵌入接口实现来满足 Database 接口要求
 type DatabaseClient struct {
 	cfg *config.Config
 	sf  *snowflake.Snowflake
@@ -55,14 +56,14 @@ type DatabaseClient struct {
 	// MongoDB连接（用于MongoDB）
 	mongoDB *mongo.Client
 
-	// 各功能模块的接口实现
-	userDB      interfaces.UserDatabase
-	friendDB    interfaces.FriendDatabase
-	chatDB      interfaces.ChatDatabase
-	guildDB     interfaces.GuildDatabase
-	inventoryDB interfaces.InventoryDatabase
-	cardDB      interfaces.CardDatabase
-	petDB       interfaces.PetDatabase
+	// 各功能模块的接口实现（直接嵌入以实现 Database 接口）
+	interfaces.UserDatabase
+	interfaces.FriendDatabase
+	interfaces.ChatDatabase
+	interfaces.GuildDatabase
+	interfaces.InventoryDatabase
+	interfaces.CardDatabase
+	interfaces.PetDatabase
 }
 
 // NewDatabaseClient 创建数据库客户端实例
@@ -102,14 +103,14 @@ func (c *DatabaseClient) initGORM() error {
 	// 获取GORM数据库实例
 	gormDB := gormClient.GetDB()
 
-	// 初始化各个模块的GORM实现
-	c.userDB = gorm.NewGormUserDatabase(gormDB, c.sf)
-	c.friendDB = gorm.NewGormFriendDatabase(gormDB, c.sf)
-	c.chatDB = gorm.NewGormChatDatabase(gormDB, c.sf)
-	c.guildDB = gorm.NewGormGuildDatabase(gormDB, c.sf)
-	c.inventoryDB = gorm.NewGormInventoryDatabase(gormDB, c.sf)
-	c.cardDB = gorm.NewGormCardDatabase(gormDB, c.sf)
-	c.petDB = gorm.NewGormPetDatabase(gormDB, c.sf)
+	// 初始化各个模块的GORM实现（直接赋值给嵌入的接口）
+	c.UserDatabase = gorm.NewGormUserDatabase(gormDB, c.sf)
+	c.FriendDatabase = gorm.NewGormFriendDatabase(gormDB, c.sf)
+	c.ChatDatabase = gorm.NewGormChatDatabase(gormDB, c.sf)
+	c.GuildDatabase = gorm.NewGormGuildDatabase(gormDB, c.sf)
+	c.InventoryDatabase = gorm.NewGormInventoryDatabase(gormDB, c.sf)
+	c.CardDatabase = gorm.NewGormCardDatabase(gormDB, c.sf)
+	c.PetDatabase = gorm.NewGormPetDatabase(gormDB, c.sf)
 
 	return nil
 }
@@ -130,14 +131,14 @@ func (c *DatabaseClient) initMongoDB() error {
 		return fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	// 初始化各个模块的MongoDB实现
+	// 初始化各个模块的MongoDB实现（直接赋值给嵌入的接口）
 	dbName := c.cfg.Database.MongoDB.Database
-	c.userDB = mongodb.NewMongoDBUserDatabase(c.mongoDB, dbName, c.sf)
-	c.friendDB = mongodb.NewMongoDBFriendDatabase(c.mongoDB, dbName, c.sf)
-	c.chatDB = mongodb.NewMongoDBChatDatabase(c.mongoDB, dbName, c.sf)
-	c.guildDB = mongodb.NewMongoDBGuildDatabase(c.mongoDB, dbName, c.sf)
-	c.inventoryDB = mongodb.NewMongoDBInventoryDatabase(c.mongoDB, dbName, c.sf)
-	c.cardDB = mongodb.NewMongoDBCardDatabase(c.mongoDB, dbName, c.sf)
+	c.UserDatabase = mongodb.NewMongoDBUserDatabase(c.mongoDB, dbName, c.sf)
+	c.FriendDatabase = mongodb.NewMongoDBFriendDatabase(c.mongoDB, dbName, c.sf)
+	c.ChatDatabase = mongodb.NewMongoDBChatDatabase(c.mongoDB, dbName, c.sf)
+	c.GuildDatabase = mongodb.NewMongoDBGuildDatabase(c.mongoDB, dbName, c.sf)
+	c.InventoryDatabase = mongodb.NewMongoDBInventoryDatabase(c.mongoDB, dbName, c.sf)
+	c.CardDatabase = mongodb.NewMongoDBCardDatabase(c.mongoDB, dbName, c.sf)
 
 	return nil
 }
